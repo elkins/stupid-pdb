@@ -1,3 +1,5 @@
+from typing import List, Dict, Set, Any
+
 """
 This module contains data definitions for the stupid_pdb package, starting
 with the 20 standard amino acids and their atomic configurations.
@@ -5,7 +7,7 @@ with the 20 standard amino acids and their atomic configurations.
 
 # The 20 standard amino acids represented by their 3-letter codes.
 # This list is used to randomly select amino acids for the sequence.
-STANDARD_AMINO_ACIDS = [
+STANDARD_AMINO_ACIDS: List[str] = [
     "ALA",
     "ARG",
     "ASN",
@@ -31,7 +33,7 @@ STANDARD_AMINO_ACIDS = [
 # --- Amino Acid Frequencies (Approximate percentages in proteins) ---
 # Source: Based on general protein composition data (e.g., from D. M. Smith, The Encyclopedia of Life Sciences, 2001)
 # These are normalized to sum to 1.0
-AMINO_ACID_FREQUENCIES = {
+AMINO_ACID_FREQUENCIES: Dict[str, float] = {
     "ALA": 0.081,  # Alanine
     "ARG": 0.051,  # Arginine
     "ASN": 0.038,  # Asparagine
@@ -56,7 +58,7 @@ AMINO_ACID_FREQUENCIES = {
 
 # Mapping for 1-letter to 3-letter amino acid codes
 # Standard IUPAC codes
-ONE_TO_THREE_LETTER_CODE = {
+ONE_TO_THREE_LETTER_CODE: Dict[str, str] = {
     "A": "ALA",
     "R": "ARG",
     "N": "ASN",
@@ -88,31 +90,31 @@ ONE_TO_THREE_LETTER_CODE = {
 
 # Peptide bond geometry
 
-BOND_LENGTH_N_CA = 1.458  # N-Calpha
+BOND_LENGTH_N_CA: float = 1.458  # N-Calpha
 
-BOND_LENGTH_CA_C = 1.525  # Calpha-C
+BOND_LENGTH_CA_C: float = 1.525  # Calpha-C
 
-BOND_LENGTH_C_N = 1.329  # C-N (peptide bond)
+BOND_LENGTH_C_N: float = 1.329  # C-N (peptide bond)
 
-BOND_LENGTH_C_O = 1.231  # C=O (carbonyl)
+BOND_LENGTH_C_O: float = 1.231  # C=O (carbonyl)
 
 
-ANGLE_CA_C_N = 116.2  # Calpha-C-N
+ANGLE_CA_C_N: float = 116.2  # Calpha-C-N
 
-ANGLE_C_N_CA = 121.7  # C-N-Calpha
+ANGLE_C_N_CA: float = 121.7  # C-N-Calpha
 
-ANGLE_N_CA_C = 110.0  # N-Calpha-C (tetrahedral approx)
+ANGLE_N_CA_C: float = 110.0  # N-Calpha-C (tetrahedral approx)
 
-ANGLE_CA_C_O = 120.8  # Calpha-C=O
+ANGLE_CA_C_O: float = 120.8  # Calpha-C=O
 
 
 # Side chain geometry (approximate)
 
-BOND_LENGTH_CA_CB = 1.53  # Calpha-Cbeta (typical)
+BOND_LENGTH_CA_CB: float = 1.53  # Calpha-Cbeta (typical)
 
-BOND_LENGTH_C_H = 1.08  # C-H (typical)
+BOND_LENGTH_C_H: float = 1.08  # C-H (typical)
 
-BOND_LENGTH_N_H = 1.01  # N-H (typical)
+BOND_LENGTH_N_H: float = 1.01  # N-H (typical)
 
 
 # Van der Waals radii in Angstroms (approximate values)
@@ -121,7 +123,7 @@ BOND_LENGTH_N_H = 1.01  # N-H (typical)
 
 # These are simplified values for common protein atoms.
 
-VAN_DER_WAALS_RADII = {
+VAN_DER_WAALS_RADII: Dict[str, float] = {
     "H": 1.20,  # Hydrogen
     "C": 1.70,  # Carbon
     "N": 1.55,  # Nitrogen
@@ -130,18 +132,18 @@ VAN_DER_WAALS_RADII = {
 }
 
 # Amino acid properties for sequence improbability checks
-CHARGED_AMINO_ACIDS = {
+CHARGED_AMINO_ACIDS: Set[str] = {
     "ARG",
     "HIS",
     "LYS",
     "ASP",
     "GLU",
 }  # K, R, H (positive); D, E (negative)
-POSITIVE_AMINO_ACIDS = {"ARG", "HIS", "LYS"}
-NEGATIVE_AMINO_ACIDS = {"ASP", "GLU"}
+POSITIVE_AMINO_ACIDS: Set[str] = {"ARG", "HIS", "LYS"}
+NEGATIVE_AMINO_ACIDS: Set[str] = {"ASP", "GLU"}
 
-HYDROPHOBIC_AMINO_ACIDS = {"ALA", "VAL", "ILE", "LEU", "MET", "PHE", "TRP", "TYR"}
-HYDROPHILIC_AMINO_ACIDS = {
+HYDROPHOBIC_AMINO_ACIDS: Set[str] = {"ALA", "VAL", "ILE", "LEU", "MET", "PHE", "TRP", "TYR"}
+HYDROPHILIC_AMINO_ACIDS: Set[str] = {
     "ARG",
     "ASN",
     "ASP",
@@ -152,7 +154,7 @@ HYDROPHILIC_AMINO_ACIDS = {
     "SER",
     "THR",
 }  # Contains charged ones too
-POLAR_UNCHARGED_AMINO_ACIDS = {
+POLAR_UNCHARGED_AMINO_ACIDS: Set[str] = {
     "ASN",
     "GLN",
     "SER",
@@ -169,7 +171,7 @@ POLAR_UNCHARGED_AMINO_ACIDS = {
 # For simplicity, coords are relative to CA, assuming CA is at (0,0,0) for side chain placement.
 # Backbone atoms will have special handling.
 
-AMINO_ACID_ATOMS = {
+AMINO_ACID_ATOMS: Dict[str, List[Dict[str, Any]]] = {
     "ALA": [
         # Backbone (N, CA, C, O handled by generator)
         {"name": "CB", "element": "C", "coords": [1.4, 0.0, 0.0]},  # Placeholder for CB

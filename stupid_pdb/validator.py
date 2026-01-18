@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+from typing import List, Dict, Any, Optional
 
 from .data import (
     BOND_LENGTH_N_CA,
@@ -25,8 +26,12 @@ class PDBValidator:
     A class to validate PDB structures for various violations like bond lengths, angles,
     and Ramachandran angles.
     """
+    atoms: List[Dict[str, Any]]
+    grouped_atoms: Dict[str, Dict[int, Dict[str, Dict[str, Any]]]]
+    sequences_by_chain: Dict[str, List[str]]
+    violations: List[str]
 
-    def __init__(self, pdb_content: str = None, parsed_atoms: list[dict] = None):
+    def __init__(self, pdb_content: Optional[str] = None, parsed_atoms: Optional[List[Dict[str, Any]]] = None):
         if pdb_content:
             self.pdb_content = pdb_content
             self.atoms = self._parse_pdb_atoms(pdb_content)
@@ -45,7 +50,7 @@ class PDBValidator:
         self.violations = []  # Stores detected violations
 
     @staticmethod
-    def _parse_pdb_atoms(pdb_content: str) -> list[dict]:
+    def _parse_pdb_atoms(pdb_content: str) -> List[Dict[str, Any]]:
         """
         Parses the PDB content and extracts atom information, specifically coordinates.
         Returns a list of dictionaries, each representing an atom with residue and chain info.
@@ -92,7 +97,7 @@ class PDBValidator:
                     )
         return parsed_atoms
 
-    def get_atoms(self) -> list[dict]:
+    def get_atoms(self) -> List[Dict[str, Any]]:
         """
         Returns a deep copy of the parsed atom data.
         """
@@ -100,7 +105,7 @@ class PDBValidator:
         return [atom.copy() for atom in self.atoms]
 
     @staticmethod
-    def atoms_to_pdb_line(atom_data: dict) -> str:
+    def atoms_to_pdb_line(atom_data: Dict[str, Any]) -> str:
         """
         Converts a single atom dictionary back into a PDB ATOM line.
         """
@@ -114,13 +119,13 @@ class PDBValidator:
         )
 
     @staticmethod
-    def atoms_to_pdb_content(atom_list: list[dict]) -> str:
+    def atoms_to_pdb_content(atom_list: List[Dict[str, Any]]) -> str:
         """
         Converts a list of atom dictionaries into a full PDB content string.
         """
         return "\n".join([PDBValidator.atoms_to_pdb_line(atom) for atom in atom_list]) + "\n"
 
-    def _group_atoms_by_residue(self):
+    def _group_atoms_by_residue(self) -> Dict[str, Dict[int, Dict[str, Dict[str, Any]]]]:
         """
         Groups parsed atoms by chain ID, then by residue number, then by atom name.
         Structure: {chain_id: {residue_number: {atom_name: atom_data}}}
@@ -821,11 +826,11 @@ class PDBValidator:
 
     @staticmethod
     def _apply_steric_clash_tweak(
-        parsed_atoms: list[dict],
+        parsed_atoms: List[Dict[str, Any]],
         push_distance: float = 0.1,
         min_atom_distance: float = 2.0,
         vdw_overlap_factor: float = 0.8,
-    ) -> list[dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Applies a simple heuristic to alleviate steric clashes by pushing clashing atoms apart.
         Modifies a copy of the input parsed_atoms list.

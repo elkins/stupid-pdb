@@ -39,18 +39,18 @@ PDB_ATOM_FORMAT = "ATOM  {atom_number: >5} {atom_name: <4}{alt_loc: <1}{residue_
 
 # Helper function to create a minimal PDB ATOM line
 def create_atom_line(
-    atom_number,
-    atom_name,
-    residue_name,
-    chain_id,
-    residue_number,
-    x,
-    y,
-    z,
-    element,
-    alt_loc="",
-    insertion_code=""
-):
+    atom_number: int,
+    atom_name: str,
+    residue_name: str,
+    chain_id: str,
+    residue_number: int,
+    x: float,
+    y: float,
+    z: float,
+    element: str,
+    alt_loc: str = "",
+    insertion_code: str = ""
+) -> str:
     return (
         f"ATOM  {atom_number: >5} {atom_name: <4}{alt_loc: <1}{residue_name: >3} {chain_id: <1}"
         f"{residue_number: >4}{insertion_code: <1}   "

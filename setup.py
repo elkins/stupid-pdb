@@ -14,5 +14,6 @@ setup(
     description="A simple tool to generate PDB files with random linear amino acid sequences.",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
+    install_requires=['numpy'],
     url="https://github.com/your-username/stupid-pdb",  # Replace with your URL
 )
