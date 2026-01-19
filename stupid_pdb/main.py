@@ -119,8 +119,16 @@ def main():
         default=0, # Default to 0, meaning no refinement
         help="Number of iterations to refine generated PDB by minimally adjusting clashing atoms. Implies --validate. Applied after --guarantee-valid or --best-of-N selection.",
     )
+    parser.add_argument(
+        "--use-rotamers",
+        action="store_true",
+        help="Use a rotamer library to generate side-chain conformations. Requires --full-atom.",
+    )
 
     args = parser.parse_args()
+
+    if args.use_rotamers and not args.full_atom:
+        parser.error("--use-rotamers requires --full-atom.")
 
     # Set the logging level based on user input
     log_level = getattr(logging, args.log_level.upper(), None)
@@ -179,6 +187,7 @@ def main():
                 full_atom=args.full_atom,
                 sequence_str=args.sequence,
                 use_plausible_frequencies=args.plausible_frequencies,
+                use_rotamers=args.use_rotamers,
             )
 
             if not current_pdb_content:

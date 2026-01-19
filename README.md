@@ -70,6 +70,10 @@ This will create a file named `random_linear_peptide_50_YYYYMMDD_HHMMSS.pdb` in 
     -   Type: Boolean flag (no value needed)
     -   Example: `--plausible-frequencies`
 
+-   `--use-rotamers`: Use a rotamer library to generate side-chain conformations. Requires `--full-atom`.
+    -   Type: Boolean flag (no value needed)
+    -   Example: `--use-rotamers`
+
 ### Examples:
 
 1.  **Generate a 25-residue protein with default filename (uniform random sequence):**
@@ -104,6 +108,11 @@ This will create a file named `random_linear_peptide_50_YYYYMMDD_HHMMSS.pdb` in 
     stupid-pdb --sequence "ALA-GLY-VAL" --output another_specific_peptide.pdb
     ```
 
+7.  **Generate a 10-residue protein with side-chains generated using a rotamer library:**
+    ```bash
+    stupid-pdb --length 10 --full-atom --use-rotamers --output rotamer_peptide.pdb
+    ```
+
 
 ## Output PDB Format
 
@@ -132,13 +141,3 @@ The tool uses Python's standard `logging` module.
 -   `ERROR` and `CRITICAL` messages are used for exceptions and severe failures.
 
 You can control the logging verbosity using the `--log-level` argument.
-
-## Development and Extensibility
-
-The project is structured with modularity in mind:
--   `stupid_pdb/data.py`: Defines static data like standard amino acids.
--   `stupid_pdb/generator.py`: Contains the core logic for sequence generation and PDB content formatting.
--   `stupid_pdb/main.py`: Handles command-line argument parsing and orchestrates the generation process.
--   `tests/`: Contains unit tests for the core logic.
-
-This separation of concerns allows for easy extension, such as adding new conformation types (e.g., helices, sheets) or supporting different atom types in the PDB output.
