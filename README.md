@@ -48,6 +48,34 @@ A command-line tool to generate Protein Data Bank (PDB) files with full atomic r
 - Command-line parameters stored in PDB header (REMARK 3 records)
 - Timestamps in generated filenames and headers
 
+## 📚 Understanding PDB Output - Educational Guide
+
+### Professional Biophysical Realism
+
+**synth-pdb** generates structures with realistic properties that mimic real experimental data:
+
+#### 🌡️ B-factors (Temperature Factors)
+**What**: Measure atomic mobility/flexibility (columns 61-66)  
+**Formula**: B = 8π²⟨u²⟩ (mean square displacement)  
+**Range**: 5-60 Ų  
+**Pattern**: Backbone (15-25) < Side chains (20-35) < Termini (30-50)
+
+#### 📊 Occupancy Values  
+**What**: Fraction of molecules with atom at position (columns 55-60)  
+**Range**: 0.85-1.00  
+**Correlation**: High B-factor ↔ Low occupancy  
+**Pattern**: Backbone (0.95-1.00) > Side chains (0.85-0.95)
+
+#### 🔄 Rotamer Libraries
+**What**: Side chains adopt preferred conformations  
+**Source**: Dunbrack library (experimental distributions)  
+**Coverage**: All 20 standard amino acids
+
+#### 🧬 Secondary Structures
+**What**: Regular backbone patterns (helices, sheets)  
+**Control**: Per-region via `--structure` parameter  
+**Example**: `--structure "1-10:alpha,11-15:random,16-25:alpha"`
+
 ## Installation
 
 ### From PyPI (Recommended)

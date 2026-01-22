@@ -134,6 +134,46 @@ def _calculate_bfactor(
     return round(bfactor, 2)
 
 
+def _calculate_occupancy(
+    atom_name: str,
+    residue_number: int,
+    total_residues: int,
+    residue_name: str,
+    bfactor: float
+) -> float:
+    """Calculate realistic occupancy for an atom (0.85-1.00)."""
+    BACKBONE_ATOMS = {'N', 'CA', 'C', 'O', 'H', 'HA'}
+    
+    # Base occupancy
+    base_occupancy = 0.98 if atom_name in BACKBONE_ATOMS else 0.95
+    
+    # Terminal disorder
+    dist_from_n_term = (residue_number - 1) / max(total_residues - 1, 1)
+    dist_from_c_term = (total_residues - residue_number) / max(total_residues - 1, 1)
+    dist_from_nearest_term = min(dist_from_n_term, dist_from_c_term)
+    terminal_factor = -0.10 * (1.0 - dist_from_nearest_term)
+    
+    # Residue-specific
+    residue_factor = 0.0
+    if residue_name in ['GLY', 'SER', 'ASN', 'GLN']:
+        residue_factor = -0.03
+    elif residue_name in ['PRO', 'TRP', 'PHE']:
+        residue_factor = +0.02
+    
+    # B-factor correlation
+    normalized_bfactor = (bfactor - 5.0) / 55.0
+    bfactor_correlation = -0.08 * normalized_bfactor
+    
+    # Random variation
+    random_variation = np.random.uniform(-0.01, 0.01)
+    
+    # Calculate and clamp
+    occupancy = base_occupancy + terminal_factor + residue_factor + bfactor_correlation + random_variation
+    occupancy = max(0.85, min(1.00, occupancy))
+    
+    return round(occupancy, 2)
+
+
 # Helper function to create a minimal PDB ATOM line
 def create_atom_line(
     atom_number: int,
@@ -147,19 +187,21 @@ def create_atom_line(
     element: str,
     alt_loc: str = "",
     insertion_code: str = "",
-    temp_factor: float = 0.00  # B-factor (temperature factor) in Ų
+    temp_factor: float = 0.00,  # B-factor (temperature factor) in Ų
+    occupancy: float = 1.00  # Occupancy (fraction of molecules)
 ) -> str:
     """
     Create a PDB ATOM line.
     
     EDUCATIONAL NOTE - PDB ATOM Record Format:
-    The temp_factor (B-factor) appears in columns 61-66 of the ATOM record.
-    It represents atomic mobility/flexibility. See _calculate_bfactor() for details.
+    - temp_factor (columns 61-66): Atomic mobility/flexibility
+    - occupancy (columns 55-60): Fraction of molecules with atom at this position
+    See _calculate_bfactor() and _calculate_occupancy() for details.
     """
     return (
         f"ATOM  {atom_number: >5} {atom_name: <4}{alt_loc: <1}{residue_name: >3} {chain_id: <1}"
         f"{residue_number: >4}{insertion_code: <1}   "
-        f"{x: >8.3f}{y: >8.3f}{z: >8.3f}{1.00: >6.2f}{temp_factor: >6.2f}          "
+        f"{x: >8.3f}{y: >8.3f}{z: >8.3f}{occupancy: >6.2f}{temp_factor: >6.2f}          "
         f"{element: >2}  "
     )
 
@@ -741,10 +783,14 @@ def generate_pdb_content(
     # to replace these with realistic values based on atom type, position, and residue type.
     # This makes the output look more professional and realistic.
     
-    # Get total number of residues for B-factor calculation
+    # EDUCATIONAL NOTE - Adding Realistic Occupancy:
+    # Similarly, biotite sets all occupancy values to 1.00. We calculate realistic
+    # occupancy values (0.85-1.00) that correlate with B-factors and reflect disorder.
+    
+    # Get total number of residues for B-factor and occupancy calculation
     total_residues = len(set(peptide.res_id))
     
-    # Process each line and add realistic B-factors
+    # Process each line and add realistic B-factors and occupancy
     processed_lines = []
     for line in atomic_and_ter_content.splitlines():
         if line.startswith("ATOM"):
@@ -756,9 +802,13 @@ def generate_pdb_content(
             # Calculate realistic B-factor for this atom
             bfactor = _calculate_bfactor(atom_name, res_num, total_residues, res_name)
             
-            # Replace the B-factor in the line (columns 61-66, 0-indexed: 60-66)
-            # Keep everything before column 60, insert new B-factor, keep everything after column 66
-            line = line[:60] + f"{bfactor:6.2f}" + line[66:]
+            # Calculate realistic occupancy for this atom (correlates with B-factor)
+            occupancy = _calculate_occupancy(atom_name, res_num, total_residues, res_name, bfactor)
+            
+            # Replace B-factor and occupancy in the line
+            # Occupancy: columns 55-60 (0-indexed: 54-60)
+            # B-factor: columns 61-66 (0-indexed: 60-66)
+            line = line[:54] + f"{occupancy:6.2f}" + f"{bfactor:6.2f}" + line[66:]
         
         processed_lines.append(line)
     

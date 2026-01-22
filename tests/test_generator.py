@@ -544,7 +544,9 @@ class TestGenerator(unittest.TestCase):
                     # Occupancy (55-60) - 6 chars, 2 decimal places
                     self.assertEqual(len(line[54:60]), 6)
                     self.assertRegex(line[54:60], OCC_TEMP_REGEX, f"Occupancy format incorrect: '{line[54:60]}'" )
-                    self.assertAlmostEqual(atom_data["occupancy"], 1.00, places=2)
+                    # Occupancy should now be realistic (0.85-1.00), not hardcoded 1.00
+                    self.assertGreaterEqual(atom_data["occupancy"], 0.85, "Occupancy should be >= 0.85")
+                    self.assertLessEqual(atom_data["occupancy"], 1.00, "Occupancy should be <= 1.00")
 
                     # Temp Factor (61-66) - 6 chars, 2 decimal places
                     self.assertEqual(len(line[60:66]), 6)
