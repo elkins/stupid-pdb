@@ -164,12 +164,16 @@ POLAR_UNCHARGED_AMINO_ACIDS: Set[str] = {
 }  # CYS, TYR can be ambivalent
 
 # --- Atomic Definitions for Each Amino Acid ---
+# NOTE: This dictionary is currently UNUSED in the codebase.
+# The generator uses biotite's residue templates instead for atom placement.
+# This data is RESERVED for potential future use in custom rotamer library implementation
+# or manual side-chain placement algorithms.
+#
 # Each amino acid defines its atoms relative to the C-alpha (CA) position (0,0,0)
-# for side chain atoms. Backbone atoms (N, C, O) will be placed based on previous
+# for side chain atoms. Backbone atoms (N, C, O) would be placed based on previous
 # residue geometry in the generator.
 # Format: {'name': 'ATOM_NAME', 'element': 'ELEMENT_SYMBOL', 'coords': [x, y, z]}
 # For simplicity, coords are relative to CA, assuming CA is at (0,0,0) for side chain placement.
-# Backbone atoms will have special handling.
 
 AMINO_ACID_ATOMS: Dict[str, List[Dict[str, Any]]] = {
     "ALA": [

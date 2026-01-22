@@ -7,6 +7,7 @@ import logging
 import datetime
 import os
 import sys
+from typing import List
 
 from .generator import generate_pdb_content
 from .validator import PDBValidator
@@ -16,7 +17,7 @@ from .pdb_utils import extract_atomic_content, assemble_pdb_content
 logger = logging.getLogger(__name__)
 
 
-def _build_command_string(args) -> str:
+def _build_command_string(args: argparse.Namespace) -> str:
     """
     Builds the command-line string from parsed arguments for reproducibility.
     
@@ -49,7 +50,7 @@ def _build_command_string(args) -> str:
     return " ".join(cmd_parts)
 
 
-def main():
+def main() -> None:
     """
     Main function to parse arguments and generate the PDB file.
     """

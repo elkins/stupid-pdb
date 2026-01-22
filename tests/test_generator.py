@@ -9,7 +9,7 @@ import io
 import tempfile
 import os
 from stupid_pdb.generator import _resolve_sequence, generate_pdb_content, CA_DISTANCE
-from stupid_pdb.data import STANDARD_AMINO_ACIDS, AMINO_ACID_ATOMS, ONE_TO_THREE_LETTER_CODE, BOND_LENGTH_N_CA, BOND_LENGTH_CA_C, BOND_LENGTH_C_O, ANGLE_N_CA_C, ANGLE_CA_C_N, ANGLE_CA_C_O
+from stupid_pdb.data import STANDARD_AMINO_ACIDS, ONE_TO_THREE_LETTER_CODE, BOND_LENGTH_N_CA, BOND_LENGTH_CA_C, BOND_LENGTH_C_O, ANGLE_N_CA_C, ANGLE_CA_C_N, ANGLE_CA_C_O
 from stupid_pdb.validator import PDBValidator
 
 # Suppress logging during tests to keep output clean

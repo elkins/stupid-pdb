@@ -1,10 +1,10 @@
 import random
 import numpy as np
 import logging
+from typing import List, Optional
 from .data import (
     STANDARD_AMINO_ACIDS,
     ONE_TO_THREE_LETTER_CODE,
-    AMINO_ACID_ATOMS,
     AMINO_ACID_FREQUENCIES,
     BOND_LENGTH_N_CA,
     BOND_LENGTH_CA_C,
@@ -125,7 +125,7 @@ def _calculate_angle(
 
 def _generate_random_amino_acid_sequence(
     length: int, use_plausible_frequencies: bool = False
-) -> list[str]:
+) -> List[str]:
     """
     Generates a random amino acid sequence of a given length.
     If `use_plausible_frequencies` is True, uses frequencies from AMINO_ACID_FREQUENCIES.
@@ -143,8 +143,8 @@ def _generate_random_amino_acid_sequence(
 
 
 def _resolve_sequence(
-    length: int, user_sequence_str: str = None, use_plausible_frequencies: bool = False
-) -> list[str]:
+    length: Optional[int], user_sequence_str: Optional[str] = None, use_plausible_frequencies: bool = False
+) -> List[str]:
     """
     Resolves the amino acid sequence, either by parsing a user-provided sequence
     or generating a random one.
@@ -181,8 +181,8 @@ def _resolve_sequence(
 
 
 def generate_pdb_content(
-    length: int = None,
-    sequence_str: str = None,
+    length: Optional[int] = None,
+    sequence_str: Optional[str] = None,
     use_plausible_frequencies: bool = False,
 ) -> str:
     """
