@@ -4,25 +4,46 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synth-pdb"
-version = "0.1.0"
-description = "A tool to generate synthetic PDB files with customizable conformations for testing and educational purposes"
+version = "1.0.0"
+description = "Generate realistic PDB files with mixed secondary structures for bioinformatics testing, education, and tool development"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Gemini", email = "gemini@google.com"}
+    {name = "George Elkins", email = "george@example.com"}
 ]
-keywords = ["pdb", "protein", "structure", "bioinformatics", "testing"]
+keywords = [
+    "pdb", 
+    "protein", 
+    "structure", 
+    "bioinformatics", 
+    "testing",
+    "peptide-generation",
+    "molecular-modeling",
+    "ramachandran",
+    "secondary-structure",
+    "structural-biology",
+    "protein-folding",
+    "educational-tool",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Education",
+    "Topic :: Software Development :: Testing",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
 ]
 
 dependencies = [
@@ -43,8 +64,11 @@ dev = [
 synth-pdb = "synth_pdb.main:main"
 
 [project.urls]
-Homepage = "https://github.com/your-username/synth-pdb"
-Repository = "https://github.com/your-username/synth-pdb"
+Homepage = "https://github.com/georgeelkins/synth-pdb"
+Repository = "https://github.com/georgeelkins/synth-pdb"
+"Bug Tracker" = "https://github.com/georgeelkins/synth-pdb/issues"
+Documentation = "https://github.com/georgeelkins/synth-pdb#readme"
+Changelog = "https://github.com/georgeelkins/synth-pdb/releases"
 
 [tool.setuptools.packages.find]
 where = ["."]

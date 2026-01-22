@@ -397,7 +397,7 @@ WARNING  Steric clash (min distance): Atoms CA-3-A and CB-3-A are too close (1.8
 The name reflects the tool's **intentionally simplistic** approach:
 - Uses idealized bond lengths and angles (not energy-minimized)
 - Linear backbone geometry (no native-like folding)
-- Simplified rotamer placement (limited conformational sampling)
+- Rotamer sampling uses Dunbrack library (most common rotamers, not exhaustive sampling)
 - No solvent, no cofactors, no post-translational modifications
 
 Real protein structures require sophisticated methods like:
@@ -410,22 +410,27 @@ Real protein structures require sophisticated methods like:
 
 ### Structural Limitations
 
-1. **Linear Geometry**: All structures are extended alpha-helixes
-   - No beta-sheets, turns, or loops
-   - No tertiary or quaternary structure
+1. **Linear Peptides Only**: 
+   - No disulfide bonds between cysteines
+   - No cyclic peptides
+   - Single chain only (no multi-chain complexes)
+   - No tertiary structure (folding) - structures are extended/linear
 
-2. **Idealized Parameters**: Bond lengths/angles from literature averages
-   - No force field optimization
-   - May deviate from experimental structures
+2. **Idealized Geometry**:
+   - Bond lengths and angles use standard values
+   - No thermal fluctuations (except small omega angle variation)
+   - Structures may not match experimental geometries exactly
 
-3. **Limited Rotamers**: Only LEU uses rotamer library currently
-   - Other residues use template geometries
-   - Side chains may have unfavorable conformations
+3. **Secondary Structure Simplification**:
+   - Uses fixed phi/psi angles for each conformation type
+   - Real proteins have more variation within secondary structures
+   - No complex tertiary interactions
 
 4. **No Environmental Effects**:
    - No solvent (water) molecules
    - No ions or cofactors
    - No pH effects on protonation states
+   - No membrane environment for transmembrane peptides
 
 ### Validation Limitations
 
