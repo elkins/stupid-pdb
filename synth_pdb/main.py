@@ -15,6 +15,7 @@ from pathlib import Path
 from .generator import generate_pdb_content
 from .validator import PDBValidator
 from .pdb_utils import extract_atomic_content, assemble_pdb_content
+from .viewer import view_structure_in_browser
 
 # Get a logger for this module
 logger = logging.getLogger(__name__)
@@ -59,8 +60,8 @@ def main() -> None:
     parser.add_argument(
         "--length",
         type=int,
-        default=10,
-        help="Length of the amino acid sequence (number of residues).",
+        default=None,
+        help="Length of the amino acid sequence (number of residues). Default: 10 (or inferred from --structure if provided).",
     )
     parser.add_argument(
         "--output",
@@ -126,6 +127,11 @@ def main() -> None:
         default=None,
         help="Per-region conformation specification (NEW!). Format: 'start-end:conformation,...' Example: '1-10:alpha,11-20:beta'. Allows mixed secondary structures. Unspecified residues use --conformation default.",
     )
+    parser.add_argument(
+        "--visualize",
+        action="store_true",
+        help="Open generated structure in browser-based 3D viewer (uses 3Dmol.js). Interactive visualization with rotation, zoom, and style controls.",
+    )
 
     args = parser.parse_args()
 
@@ -160,9 +166,38 @@ def main() -> None:
         logger.info(f"--refine-clashes is set to {args.refine_clashes}. Validation will be performed.")
 
     # Validate length only if no sequence is provided
-    if args.sequence is None and (args.length is None or args.length <= 0):
-        logger.error("Length must be a positive integer when no sequence is provided.")
-        sys.exit(1)
+    if args.sequence is None:
+        if args.length is None or args.length <= 0:
+            # Check if we can infer length from structure parameter
+            if args.structure:
+                # Parse structure to find maximum residue number
+                try:
+                    max_residue = 0
+                    for region in args.structure.split(','):
+                        region = region.strip()
+                        if ':' in region:
+                            range_part = region.split(':', 1)[0]
+                            if '-' in range_part:
+                                _, end_str = range_part.split('-', 1)
+                                end = int(end_str)
+                                max_residue = max(max_residue, end)
+                    
+                    if max_residue > 0:
+                        args.length = max_residue
+                        logger.info(f"Inferred length={max_residue} from --structure parameter")
+                    else:
+                        logger.error("Could not infer length from --structure parameter")
+                        sys.exit(1)
+                except Exception as e:
+                    logger.error(f"Failed to parse --structure parameter: {e}")
+                    sys.exit(1)
+            else:
+                # No structure parameter, use default length of 10
+                args.length = 10
+                logger.debug("Using default length=10")
+        elif args.length <= 0:
+            logger.error("Length must be a positive integer.")
+            sys.exit(1)
 
     length_for_generator = args.length if args.sequence is None else None
 
@@ -360,6 +395,21 @@ def main() -> None:
                     logger.warning("--- End Validation Report ---")
                 elif args.validate:
                     logger.info(f"No violations found in the final PDB for {os.path.abspath(output_filename)}.")
+
+                # Open 3D viewer if requested
+                if args.visualize:
+                    logger.info("Opening 3D molecular viewer in browser...")
+                    try:
+                        view_structure_in_browser(
+                            final_full_pdb_content_to_write,
+                            filename=output_filename,
+                            style="cartoon",
+                            color="spectrum"
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to open 3D viewer: {e}")
+                        # Don't fail the entire program if visualization fails
+
 
             except Exception as e:
                 logger.error("An unexpected error occurred during file writing: %s", e)
