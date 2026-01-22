@@ -183,6 +183,59 @@ stupid-pdb --length 30 --refine-clashes 5 --output refined.pdb
 stupid-pdb --length 25 --best-of-N 10 --refine-clashes 3 --output optimized.pdb
 ```
 
+#### Biologically-Inspired Examples
+
+Generate structures that mimic real protein motifs for educational demonstrations:
+
+```bash
+# Collagen-like triple helix motif (polyproline II)
+# Collagen is rich in proline and glycine with PPII conformation
+stupid-pdb --sequence "GPGPPGPPGPPGPPGPPGPP" --conformation ppii --output collagen_like.pdb
+
+# Silk fibroin-like beta sheet
+# Silk proteins contain repeating (GAGAGS) motifs forming beta sheets
+stupid-pdb --sequence "GAGAGSGAGAGSGAGAGS" --conformation beta --output silk_like.pdb
+
+# Amyloid fibril-like beta structure
+# Amyloid fibrils are rich in beta sheets, often with hydrophobic residues
+stupid-pdb --sequence "LVEALYLVCGERGFFYTPKA" --conformation beta --best-of-N 10 --output amyloid_like.pdb
+
+# Leucine zipper motif (alpha helix)
+# Leucine zippers are alpha-helical with leucine repeats every 7 residues
+stupid-pdb --sequence "LKELEKELEKELEKELEKELEKEL" --conformation alpha --output leucine_zipper.pdb
+
+# Intrinsically disordered region (random conformation)
+# IDRs lack stable structure, rich in charged/polar residues
+stupid-pdb --sequence "GGSEGGSEGGSEGGSEGGSE" --conformation random --output disordered_region.pdb
+
+# Transmembrane helix-like structure (extended alpha helix)
+# Membrane-spanning regions are often long alpha helices with hydrophobic residues
+stupid-pdb --sequence "LVIVLLVIVLLVIVLLVIVL" --conformation alpha --output transmembrane_like.pdb
+
+# Beta-turn rich structure (mixed conformations)
+# Proline and glycine favor turns and loops
+stupid-pdb --sequence "GPGPGPGPGPGPGPGP" --conformation random --output beta_turn_rich.pdb
+
+# Elastin-like peptide (extended/random)
+# Elastin contains repeating VPGVG motifs with flexible structure
+stupid-pdb --sequence "VPGVGVPGVGVPGVGVPGVG" --conformation extended --output elastin_like.pdb
+
+# Antimicrobial peptide-like (alpha helix)
+# Many AMPs are short amphipathic alpha helices
+stupid-pdb --sequence "KWKLFKKIGAVLKVL" --conformation alpha --validate --output amp_like.pdb
+
+# Zinc finger motif-like (mixed structure)
+# Zinc fingers have beta sheets and alpha helices
+stupid-pdb --sequence "CPHCGKSFSQKSDLVKHQRT" --conformation random --best-of-N 5 --output zinc_finger_like.pdb
+```
+
+**Educational Notes:**
+- These examples demonstrate **sequence-structure relationships**
+- Real proteins would have more complex tertiary structures and post-translational modifications
+- Use these for teaching secondary structure concepts, not for actual molecular modeling
+- Combine with `--validate` to show how different conformations affect structural quality
+- Try `--best-of-N` and `--refine-clashes` to explore quality control strategies
+
 #### For Structural Biologists
 
 ```bash
