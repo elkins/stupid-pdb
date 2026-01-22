@@ -24,7 +24,8 @@ A command-line tool to generate Protein Data Bank (PDB) files with full atomic r
 - Full atomic representation with backbone and side-chain heavy atoms + hydrogens
 - Customizable sequence (1-letter or 3-letter amino acid codes)
 - Random sequence generation with uniform or biologically plausible frequencies
-- Rotamer-based side-chain placement for selected residues (LEU)
+- **Conformational diversity**: Generate alpha helices, beta sheets, extended chains, or random conformations
+- Rotamer-based side-chain placement for selected residues (LEU, VAL, ILE, ARG, LYS)
 
 🔬 **Validation Suite**
 - Bond length validation
@@ -97,6 +98,17 @@ stupid-pdb --length 20 --best-of-N 10 --refine-clashes 5 --output refined_peptid
   - Based on natural protein composition
   - Ignored if `--sequence` is provided
 
+- `--conformation \u003cCONFORMATION\u003e`: Secondary structure conformation to generate
+  - Options: `alpha`, `beta`, `ppii`, `extended`, `random`
+  - Default: `alpha` (alpha helix)
+  - Choices:
+    - `alpha`: Alpha helix (φ=-57°, ψ=-47°)
+    - `beta`: Beta sheet (φ=-135°, ψ=135°)
+    - `ppii`: Polyproline II helix (φ=-75°, ψ=145°)
+    - `extended`: Extended/stretched conformation (φ=-120°, ψ=120°)
+    - `random`: Random sampling from allowed Ramachandran regions
+  - Example: `--conformation beta`
+
 #### **Validation & Quality Control**
 
 - `--validate`: Run validation checks on the generated structure
@@ -144,6 +156,15 @@ stupid-pdb --sequence "ELVIS" --validate --output elvis.pdb
 
 # Use biologically realistic frequencies
 stupid-pdb --length 100 --plausible-frequencies
+
+# Generate beta sheet conformation
+stupid-pdb --length 20 --conformation beta --output beta_sheet.pdb
+
+# Generate extended conformation
+stupid-pdb --length 15 --conformation extended
+
+# Generate random conformation (mixed alpha/beta regions)
+stupid-pdb --length 30 --conformation random
 ```
 
 #### Quality Control

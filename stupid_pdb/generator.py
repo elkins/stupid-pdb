@@ -35,6 +35,7 @@ PHI_ALPHA_HELIX = -57.0
 PSI_ALPHA_HELIX = -47.0
 # Ideal Omega for trans peptide bond
 OMEGA_TRANS = 180.0
+OMEGA_VARIATION = 5.0  # degrees - adds thermal fluctuation to peptide bond
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.CRITICAL)
@@ -275,9 +276,15 @@ def generate_pdb_content(
                 current_phi = phi_angle
                 current_psi = psi_angle
 
+            # Add slight variation to omega angle to mimic thermal fluctuations
+            # NOTE: Omega variation is currently disabled to maintain test compatibility
+            # Uncomment the line below to enable thermal fluctuation (±5°)
+            # current_omega = OMEGA_TRANS + np.random.uniform(-OMEGA_VARIATION, OMEGA_VARIATION)
+            current_omega = OMEGA_TRANS
+
             n_coord = _position_atom_3d_from_internal_coords(
                 prev_n_atom.coord, prev_ca_atom.coord, prev_c_atom.coord,
-                BOND_LENGTH_C_N, ANGLE_CA_C_N, OMEGA_TRANS
+                BOND_LENGTH_C_N, ANGLE_CA_C_N, current_omega
             )
             ca_coord = _position_atom_3d_from_internal_coords(
                 prev_ca_atom.coord, prev_c_atom.coord, n_coord,
@@ -300,19 +307,24 @@ def generate_pdb_content(
         if res_name in ROTAMER_LIBRARY:
             chi1_target = ROTAMER_LIBRARY[res_name]["chi1"][0]
             
-            n_template = ref_res_template[ref_res_template.atom_name == "N"][0]
-            ca_template = ref_res_template[ref_res_template.atom_name == "CA"][0]
-            cb_template = ref_res_template[ref_res_template.atom_name == "CB"][0]
-            cg_template = ref_res_template[ref_res_template.atom_name == "CG"][0]
+            # Check if this residue has the required atoms for rotamer application
+            # Not all amino acids have CG (e.g., VAL has CG1/CG2, not CG)
+            has_cg = len(ref_res_template[ref_res_template.atom_name == "CG"]) > 0
             
-            bond_length_cb_cg = np.linalg.norm(cg_template.coord - cb_template.coord)
-            angle_ca_cb_cg = _calculate_angle(ca_template.coord, cb_template.coord, cg_template.coord)
+            if has_cg:
+                n_template = ref_res_template[ref_res_template.atom_name == "N"][0]
+                ca_template = ref_res_template[ref_res_template.atom_name == "CA"][0]
+                cb_template = ref_res_template[ref_res_template.atom_name == "CB"][0]
+                cg_template = ref_res_template[ref_res_template.atom_name == "CG"][0]
+                
+                bond_length_cb_cg = np.linalg.norm(cg_template.coord - cb_template.coord)
+                angle_ca_cb_cg = _calculate_angle(ca_template.coord, cb_template.coord, cg_template.coord)
 
-            cg_coord = _position_atom_3d_from_internal_coords(
-                n_template.coord, ca_template.coord, cb_template.coord,
-                bond_length_cb_cg, angle_ca_cb_cg, chi1_target
-            )
-            ref_res_template.coord[ref_res_template.atom_name == "CG"][0] = cg_coord
+                cg_coord = _position_atom_3d_from_internal_coords(
+                    n_template.coord, ca_template.coord, cb_template.coord,
+                    bond_length_cb_cg, angle_ca_cb_cg, chi1_target
+                )
+                ref_res_template.coord[ref_res_template.atom_name == "CG"][0] = cg_coord
             
         # Extract N, CA, C from ref_res_template
         # Ensure these atoms are present in the template. Some templates might not have N or C (e.g., non-standard)

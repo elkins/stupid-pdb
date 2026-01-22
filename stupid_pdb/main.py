@@ -35,6 +35,8 @@ def _build_command_string(args: argparse.Namespace) -> str:
     
     if args.plausible_frequencies:
         cmd_parts.append("--plausible-frequencies")
+    if args.conformation != 'alpha':  # Only add if not default
+        cmd_parts.append(f"--conformation {args.conformation}")
     if args.validate:
         cmd_parts.append("--validate")
     if args.guarantee_valid:
@@ -111,10 +113,16 @@ def main() -> None:
     parser.add_argument(
         "--refine-clashes",
         type=int,
-        default=0, # Default to 0, meaning no refinement
+        default=0,  # Default to 0, meaning no refinement
         help="Number of iterations to refine generated PDB by minimally adjusting clashing atoms. Implies --validate. Applied after --guarantee-valid or --best-of-N selection.",
     )
-
+    parser.add_argument(
+        "--conformation",
+        type=str,
+        default="alpha",
+        choices=["alpha", "beta", "ppii", "extended", "random"],
+        help="Secondary structure conformation to generate. Options: alpha (default, alpha helix), beta (beta sheet), ppii (polyproline II), extended (stretched), random (random sampling).",
+    )
 
     args = parser.parse_args()
 
@@ -173,6 +181,7 @@ def main() -> None:
                 length=length_for_generator,
                 sequence_str=args.sequence,
                 use_plausible_frequencies=args.plausible_frequencies,
+                conformation=args.conformation,
             )
 
             if not current_pdb_content:

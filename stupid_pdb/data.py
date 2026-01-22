@@ -339,9 +339,30 @@ AMINO_ACID_ATOMS: Dict[str, List[Dict[str, Any]]] = {
     ],
 }
 
-ROTAMER_LIBRARY: Dict[str, Dict[str, List[float]]] = {
-    "LEU": {
-        "chi1": [-60.0, 180.0],
-    }
-}
+# --- Rotamer Library (Chi Angles) ---
+# Simplified rotamer library with common chi1 and chi2 angles
+# Based on Dunbrack rotamer library (backbone-independent)
+# Values are in degrees
+# Reference: Dunbrack & Cohen (1997) Protein Science
 
+ROTAMER_LIBRARY: Dict[str, Dict[str, List[float]]] = {
+    'LEU': {
+        'chi1': [-60, 180],  # Gauche-, trans
+        'chi2': [65],         # Gauche+
+    },
+    'VAL': {
+        'chi1': [-60, 180],  # Gauche-, trans (most common rotamers)
+    },
+    'ILE': {
+        'chi1': [-60, 180],  # Gauche-, trans
+        'chi2': [170],        # Trans (most common)
+    },
+    'ARG': {
+        'chi1': [-60, 180],  # Gauche-, trans
+        'chi2': [180],        # Trans (extended side chain)
+    },
+    'LYS': {
+        'chi1': [-60, 180],  # Gauche-, trans
+        'chi2': [180],        # Trans (extended side chain)
+    },
+}
