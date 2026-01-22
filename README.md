@@ -76,6 +76,19 @@ A command-line tool to generate Protein Data Bank (PDB) files with full atomic r
 **Control**: Per-region via `--structure` parameter  
 **Example**: `--structure "1-10:alpha,11-15:random,16-25:alpha"`
 
+#### 🧪 Residue-Specific Ramachandran Distributions (Experimental/WIP)
+**Status**: Experimental (Geometric construction needs Refactoring)
+**What**: Realistic backbone geometry based on amino acid type
+- **Glycine (GLY)**: Correctly accesses left-handed alpha region (phi > 0) ✅
+- **Proline (PRO)**: Correctly restricts phi angles ✅
+- **Preset Conformations**: (Alpha/Beta/PPII) Input angles are correct, but final structure geometry may vary due to construction method limitations. *Work in Progress.*
+
+#### 🔗 Disulfide Bonds (SSBOND) (New in v1.3.0)
+**What**: Covalent bonds between Cysteine residues
+**Detection**: Automatic detection of close CYS-CYS pairs (SG-SG distance 2.0-2.2 Å)
+**Output**: SSBOND records added to PDB header
+**Importance**: Annotates stabilizing post-translational modifications
+
 ## Installation
 
 ### From PyPI (Recommended)
@@ -93,7 +106,7 @@ This installs the `synth-pdb` package and makes the `synth-pdb` command availabl
 Install directly from the project directory:
 
 ```bash
-git clone https://github.com/georgeelkins/synth-pdb.git
+git clone https://github.com/elkins/synth-pdb.git
 cd synth-pdb
 pip install .
 ```

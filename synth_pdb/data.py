@@ -105,6 +105,25 @@ RAMACHANDRAN_PRESETS: Dict[str, Dict[str, float]] = {
         'phi': -120.0,  # Extended/stretched conformation
         'psi': 120.0,
     },
+    # Residue-specific for random sampling
+    'GLY': {
+        'phi_mean': 0.0,
+        'phi_std': 80.0,
+        'psi_mean': 0.0,
+        'psi_std': 80.0,
+    },
+    'PRO': {
+        'phi_mean': -60.0,
+        'phi_std': 15.0,
+        'psi_mean': 120.0,
+        'psi_std': 50.0,
+    },
+    'GENERAL': {
+        'phi_mean': -90.0,
+        'phi_std': 40.0,
+        'psi_mean': 0.0,
+        'psi_std': 80.0,
+    },
 }
 
 # --- Ramachandran Probability Regions for Random Sampling ---

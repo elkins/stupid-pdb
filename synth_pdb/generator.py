@@ -261,6 +261,24 @@ def _calculate_angle(
     return np.degrees(angle_rad)
 
 
+def _place_atom_with_dihedral(
+    atom1: np.ndarray,
+    atom2: np.ndarray,
+    atom3: np.ndarray,
+    bond_length: float,
+    bond_angle: float,
+    dihedral: float
+) -> np.ndarray:
+    """
+    Place a new atom using bond length, angle, and dihedral.
+    
+    Wrapper around _position_atom_3d_from_internal_coords with clearer naming.
+    """
+    return _position_atom_3d_from_internal_coords(
+        atom1, atom2, atom3, bond_length, bond_angle, dihedral
+    )
+
+
 def _generate_random_amino_acid_sequence(
     length: int, use_plausible_frequencies: bool = False
 ) -> List[str]:
@@ -278,6 +296,127 @@ def _generate_random_amino_acid_sequence(
         return random.choices(amino_acids, weights=weights, k=length)
     else:
         return [random.choice(STANDARD_AMINO_ACIDS) for _ in range(length)]
+
+
+def _detect_disulfide_bonds(peptide) -> list:
+    """
+    Detect potential disulfide bonds between cysteine residues.
+    
+    EDUCATIONAL NOTE - Disulfide Bond Detection:
+    ============================================
+    Disulfide bonds form between two cysteine (CYS) residues when their
+    sulfur atoms (SG) are close enough to form a covalent S-S bond.
+    
+    Detection Criteria:
+    - Both residues must be CYS
+    - SG-SG distance: 2.0-2.2 Å (slightly relaxed from ideal 2.0-2.1 Å)
+    - Only report each pair once (avoid duplicates)
+    
+    Why Distance Matters:
+    - < 2.0 Å: Too close (steric clash, not realistic)
+    - 2.0-2.1 Å: Ideal disulfide bond distance
+    - 2.1-2.2 Å: Acceptable (allows for flexibility)
+    - > 2.2 Å: Too far (no covalent bond possible)
+    
+    Biological Context:
+    - Disulfides stabilize protein structure
+    - Common in extracellular proteins
+    - Rare in cytoplasm (reducing environment)
+    - Important for protein folding and stability
+    
+    Args:
+        peptide: Biotite AtomArray structure
+        
+    Returns:
+        List of tuples (res_id1, res_id2) representing disulfide bonds
+        
+    Example:
+        >>> disulfides = _detect_disulfide_bonds(structure)
+        >>> print(disulfides)
+        [(3, 8), (12, 20)]  # CYS 3-8 and CYS 12-20 are bonded
+    """
+    import biotite.structure as struc
+    
+    disulfides = []
+    
+    # Find all CYS residues
+    cys_residues = peptide[peptide.res_name == 'CYS']
+    
+    if len(cys_residues) < 2:
+        return disulfides  # Need at least 2 CYS for a bond
+    
+    # Get unique residue IDs
+    cys_res_ids = np.unique(cys_residues.res_id)
+    
+    # Check all pairs of CYS residues
+    for i, res_id1 in enumerate(cys_res_ids):
+        for res_id2 in cys_res_ids[i+1:]:  # Avoid duplicates
+            # Get SG atoms for both residues
+            sg1 = peptide[(peptide.res_id == res_id1) & (peptide.atom_name == 'SG')]
+            sg2 = peptide[(peptide.res_id == res_id2) & (peptide.atom_name == 'SG')]
+            
+            if len(sg1) > 0 and len(sg2) > 0:
+                # Calculate distance
+                distance = np.linalg.norm(sg1[0].coord - sg2[0].coord)
+                
+                # Check if within disulfide bond range
+                if 2.0 <= distance <= 2.2:
+                    disulfides.append((int(res_id1), int(res_id2)))
+    
+    return disulfides
+
+
+def _generate_ssbond_records(disulfides: list, chain_id: str = 'A') -> str:
+    """
+    Generate SSBOND records for PDB header.
+    
+    EDUCATIONAL NOTE - PDB SSBOND Format:
+    ====================================
+    SSBOND records annotate disulfide bonds in PDB files.
+    
+    Format (PDB specification):
+    SSBOND   1 CYS A    6    CYS A   11
+    
+    Columns:
+    1-6:   "SSBOND"
+    8-10:  Serial number (1, 2, 3, ...)
+    12-14: Residue name 1 (always "CYS")
+    16:    Chain ID 1
+    18-21: Residue number 1 (right-justified)
+    26-28: Residue name 2 (always "CYS")
+    30:    Chain ID 2
+    32-35: Residue number 2 (right-justified)
+    
+    Why This Matters:
+    - Structure viewers use this to display bonds
+    - Analysis tools use this for stability calculations
+    - Essential for understanding protein structure
+    - Part of standard PDB format
+    
+    Args:
+        disulfides: List of (res_id1, res_id2) tuples
+        chain_id: Chain identifier (default 'A')
+        
+    Returns:
+        String containing SSBOND records (one per line)
+        
+    Example:
+        >>> records = _generate_ssbond_records([(3, 8), (12, 20)], 'A')
+        >>> print(records)
+        SSBOND   1 CYS A    3    CYS A    8
+        SSBOND   2 CYS A   12    CYS A   20
+    """
+    if not disulfides:
+        return ""
+    
+    records = []
+    for serial, (res_id1, res_id2) in enumerate(disulfides, 1):
+        # Format according to PDB specification
+        # SSBOND   1 CYS A    6    CYS A   11
+        record = f"SSBOND{serial:4d} CYS {chain_id}{res_id1:5d}    CYS {chain_id}{res_id2:5d}"
+        records.append(record)
+    
+    return "\n".join(records) + "\n" if records else ""
 
 
 def _resolve_sequence(
@@ -660,8 +799,8 @@ def generate_pdb_content(
                 # - Beta sheet: φ=-135°, ψ=135° (extended strand)
                 # - PPII: φ=-75°, ψ=145° (left-handed helix, common in collagen)
                 # - Extended: φ=-120°, ψ=120° (stretched conformation)
-                current_phi = RAMACHANDRAN_PRESETS[current_conformation]['phi']
-                current_psi = RAMACHANDRAN_PRESETS[current_conformation]['psi']
+                current_phi = RAMACHANDRAN_PRESETS[current_conformation]['phi'] + np.random.normal(0, 5)
+                current_psi = RAMACHANDRAN_PRESETS[current_conformation]['psi'] + np.random.normal(0, 5)
 
             # Add slight variation to omega angle to mimic thermal fluctuations
             # This adds realistic structural diversity (±5° variation)
@@ -841,8 +980,19 @@ def generate_pdb_content(
     final_atomic_content_block = "\n".join(padded_atomic_and_ter_content_lines).strip()
     
     # Use centralized header/footer generation
+    # Use centralized header/footer generation
     header_content = create_pdb_header(sequence_length)
     footer_content = create_pdb_footer()
     
+    # EDUCATIONAL NOTE - Disulfide Bond Annotation:
+    # Detect potential disulfide bonds and generate SSBOND records.
+    # These records must appear in the header section.
+    disulfides = _detect_disulfide_bonds(peptide)
+    ssbond_records = _generate_ssbond_records(disulfides, chain_id='A')
+    
     # Final assembly of content
-    return f"{header_content}\n{final_atomic_content_block}\n{footer_content}"
+    # If we have SSBOND records, insert them after the main header
+    if ssbond_records:
+        return f"{header_content}\n{ssbond_records}{final_atomic_content_block}\n{footer_content}"
+    else:
+        return f"{header_content}\n{final_atomic_content_block}\n{footer_content}"
