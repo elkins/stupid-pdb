@@ -50,7 +50,7 @@ A command-line tool to generate Protein Data Bank (PDB) files with full atomic r
 
 ## 📚 Understanding PDB Output - Educational Guide
 
-### Professional Biophysical Realism
+### Biophysical Realism
 
 **synth-pdb** generates structures with realistic properties that mimic real experimental data:
 
@@ -384,6 +384,42 @@ synth-pdb --length 20 --structure "1-7:beta,8-12:random,13-20:beta" --output bet
 - Useful for teaching protein architecture and domain organization
 - Great for testing structure analysis tools with realistic inputs
 - Demonstrates how sequence and structure work together
+
+#### Detailed Educational Case Studies
+
+These comprehensive examples demonstrate how to use `synth-pdb` to model specific biological features found in well-known proteins.
+
+**1. Glucagon (Alpha Helix Hormone)**
+*29 residues | PDB: 1GCN*
+Glucagon is a peptide hormone that raises glucose levels. It folds into a characteristic alpha helix.
+```bash
+synth-pdb --sequence HSQGTFTSDYSKYLDSRRAQDFVQWLMNT --conformation alpha --refine-clashes 0 --output glucagon.pdb
+```
+*Educational Concept*: Studying alpha-helical packing and amphipathicity.
+
+**2. Melittin (Bent Helix / Hinge)**
+*26 residues | PDB: 2MLT*
+The principal toxin in bee venom. It forms two alpha helices separated by a "hinge" region, allowing it to puncture membranes.
+```bash
+synth-pdb --sequence GIGAVLKVLTTGLPALISWIKRKRQQ --structure "1-11:alpha,12-14:random,15-26:alpha" --refine-clashes 50 --output melittin.pdb
+```
+*Educational Concept*: Modeling non-linear secondary structures and flexible linkers (hinges).
+
+**3. Bovine Pancreatic Trypsin Inhibitor (BPTI) (Disulfide Bonds)**
+*58 residues | PDB: 1BPI*
+A classic model for protein folding studies ("The Hydrogen Atom of Protein Folding"). It is stabilized by three disulfide bonds.
+```bash
+synth-pdb --sequence RPDFCLEPPYTGPCKARIIRYFYNAKAGLCQTFVYGGCRAKRNNFKSAEDCMRTCGGA --conformation random --refine-clashes 100 --output bpti.pdb
+```
+*Educational Concept*: Automatic detection of disulfide bonds (`SSBOND` records) in a randomly folded state. Run with `--validate` to see if the generator placed cysteines close enough to bond!
+
+**4. Ubiquitin (Complex Mixed Fold)**
+*76 residues | PDB: 1UBQ*
+A highly conserved regulatory protein with a complex mixed alpha/beta fold (beta grasp fold).
+```bash
+synth-pdb --sequence MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG --structure "1-7:beta,12-16:beta,23-34:alpha,41-45:beta,48-49:beta,56-59:alpha,66-70:beta" --refine-clashes 50 --best-of-N 5 --output ubiquitin.pdb
+```
+*Educational Concept*: Generating complex, multi-domain topologies and managing steric clashes in larger dense structures.
 
 #### For Structural Biologists
 
