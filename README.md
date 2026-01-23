@@ -83,7 +83,7 @@ A command-line tool to generate Protein Data Bank (PDB) files with full atomic r
 - **Proline (PRO)**: Correctly restricts phi angles ✅
 - **Preset Conformations**: (Alpha/Beta/PPII) Input angles are correct, but final structure geometry may vary due to construction method limitations. *Work in Progress.*
 
-#### 🔗 Disulfide Bonds (SSBOND) (New in v1.3.0)
+#### 🔗 Disulfide Bonds (SSBOND)
 **What**: Covalent bonds between Cysteine residues
 **Detection**: Automatic detection of close CYS-CYS pairs (SG-SG distance 2.0-2.2 Å)
 **Output**: SSBOND records added to PDB header
@@ -142,7 +142,7 @@ synth-pdb --length 20 --best-of-N 10 --refine-clashes 5 --output refined_peptide
 
 ## 🚀 Quick Visual Demo
 
-Want to see the new **Physics + Visualization** capabilities in action?
+Want to see the **Physics + Visualization** capabilities in action?
 
 Run this command to generate a **Leucine Zipper** (classic alpha helix), **minimize** its energy using OpenMM, and immediately **visualize** it in your browser:
 
@@ -690,19 +690,26 @@ This project relies on the following open-source scientific software:
 ## 📚 References & Scientific Publications
 
 ### Key Publications in NMR Structure Validation
-Special acknowledgement to the foundational work of **G.T. Montelione** and **Roberto Tejero** in establishing rigorous metrics for NMR structure quality.
 
 1.  **Protein Structure Validation Suite (PSVS)**
-    *   Bhattacharya, A., **Tejero, R.**, & **Montelione, G. T.** (2007). "Evaluating protein structures determined by structural genomics consortia." *Proteins: Structure, Function, and Bioinformatics*, 66(4), 778-795.
+    *   Bhattacharya, A., Tejero, R., & Montelione, G. T. (2007). "Evaluating protein structures determined by structural genomics consortia." *Proteins: Structure, Function, and Bioinformatics*, 66(4), 778-795.
     *   [Link to Publisher](https://onlinelibrary.wiley.com/doi/abs/10.1002/prot.21165)
 
 2.  **RPF Scores (Recall, Precision, F-measure)**
-    *   Huang, Y. J., Powers, R., & **Montelione, G. T.** (2005). "Protein NMR recall, precision, and F-measure scores (RPF scores): structure quality assessment measures based on information retrieval statistics." *Journal of the American Chemical Society*, 127(6), 1665-1674.
+    *   Huang, Y. J., Powers, R., & Montelione, G. T. (2005). "Protein NMR recall, precision, and F-measure scores (RPF scores): structure quality assessment measures based on information retrieval statistics." *Journal of the American Chemical Society*, 127(6), 1665-1674.
     *   [Link to Publisher](https://pubs.acs.org/doi/10.1021/ja0471963)
 
 3.  **DP Score (Discriminant Power)**
-    *   Huang, Y. J., **Tejero, R.**, Powers, R., & **Montelione, G. T.** (2006). "A topology-constrained distance network algorithm for protein structure determination from NOESY data." *Proteins: Structure, Function, and Bioinformatics*, 62(3), 587-603.
+    *   Huang, Y. J., Tejero, R., Powers, R., & Montelione, G. T. (2006). "A topology-constrained distance network algorithm for protein structure determination from NOESY data." *Proteins: Structure, Function, and Bioinformatics*, 62(3), 587-603.
     *   [Link to Publisher](https://onlinelibrary.wiley.com/doi/abs/10.1002/prot.20784)
+
+### Data Standards
+
+- **NMR Exchange Format (NEF)**
+    *   Gutmanas, A., et al. (2015). "NMR Exchange Format: a unified and open standard for representation of NMR restraint data." *Nature Structural & Molecular Biology*, 22, 433–434.
+    *   [Link to Publisher](https://www.nature.com/articles/nsmb.3041)
+    *   **Extension Proposal:** "Proposal For Incorporating NMR Relaxation Data In NEF" (GitHub PDF)
+        *   [Link to Proposal](https://github.com/NMRExchangeFormat/NEF/blob/master/specification/Proposal%20For%20Incorporating%20NMR%20Relaxation%20Data%20In%20NEF.pdf)
 
 ### General Protein Structure References
 
@@ -713,7 +720,7 @@ Special acknowledgement to the foundational work of **G.T. Montelione** and **Ro
 
 ## Biophysics 101: Understanding Energy Minimization
 
-This section explains the science behind the new `--minimize` feature.
+This section explains the science behind the `--minimize` feature.
 
 ### 🏔️ The Energy Landscape
 

@@ -108,3 +108,116 @@ def write_nef_file(
         f.write(nc)
     
     logger.info(f"Successfully wrote {len(restraints)} restraints to {filename}.")
+
+def write_nef_relaxation(
+    filename: str,
+    sequence: str,
+    relaxation_data: Dict[int, Dict[str, float]],
+    field_freq_mhz: float = 600.0,
+    system_name: str = "synth-pdb-project"
+) -> None:
+    """
+    Append Relaxation Data (R1, R2, NOE) to a NEF file.
+    
+    Args:
+        filename: Path to EXISTING or NEW NEF file. (Currently overwrites or appends? 
+                  Better to write all at once usually, but here we might append).
+                  Actually, NEF stricture requires `data_` block. Appending is tricky.
+                  For simplicity, this function assumes it's WRITING a new file solely for relaxation
+                  OR the user should have called a master writer.
+                  
+                  Let's make this standalone for "Relaxation Only" or refactor `write_nef_file` later.
+                  For Phase 8, let's just write a new file or support "append" mode carefully.
+    """
+    # ... Implementation ...
+    # For simplicity in this iteration, we will just support writing a NEW file 
+    # that contains Sequence + Relaxation. 
+    # (Merging with NOEs would require a unified "write_all_nef" function).
+    
+    logger.info(f"Writing NEF relaxation data to {filename}...")
+    
+    nc = "data_" + system_name + "\n\n"
+    nc += "_nef_nmr_meta_data.nef_format_version 1.1\n"
+    nc += f"_nef_nmr_meta_data.creation_date {datetime.datetime.now().isoformat()}\n"
+    nc += "_nef_nmr_meta_data.program_name synth-pdb\n\n"
+    
+    # Write Sequence (Required)
+    nc += "save_nef_sequence\n"
+    nc += "   _nef_sequence.sf_category nef_sequence\n"
+    nc += "   _nef_sequence.sf_framecode nef_sequence\n\n"
+    nc += "   loop_\n"
+    nc += "      _nef_sequence.chain_code\n"
+    nc += "      _nef_sequence.sequence_code\n"
+    nc += "      _nef_sequence.residue_name\n"
+    nc += "      _nef_sequence.residue_type\n"
+    
+    from .data import ONE_TO_THREE_LETTER_CODE
+    for i, char in enumerate(sequence):
+        res_num = i + 1
+        res_name = ONE_TO_THREE_LETTER_CODE.get(char, "UNK")
+        nc += f"      A {res_num} {res_name} protein\n"
+    nc += "   stop_\n"
+    nc += "save_\n\n"
+    
+    # Helper to write a measurement list
+    def write_list(metric_name, nef_name, unit):
+        block = f"save_{nef_name}_{int(field_freq_mhz)}MHz\n"
+        block += f"   _nef_nmr_measurement_list.sf_category nef_nmr_measurement_list\n"
+        block += f"   _nef_nmr_measurement_list.sf_framecode {nef_name}_{int(field_freq_mhz)}MHz\n"
+        block += f"   _nef_nmr_measurement_list.experiment_classification {nef_name}\n"
+        block += f"   _nef_nmr_measurement_list.measurement_unit {unit}\n"
+        block += "\n"
+        block += "   loop_\n"
+        block += "      _nef_nmr_measurement.index\n"
+        block += "      _nef_nmr_measurement.chain_code\n"
+        block += "      _nef_nmr_measurement.sequence_code\n"
+        block += "      _nef_nmr_measurement.residue_name\n"
+        block += "      _nef_nmr_measurement.atom_name\n"
+        block += "      _nef_nmr_measurement.value\n"
+        block += "      _nef_nmr_measurement.value_uncertainty\n"
+        
+        count = 0
+        sorted_ids = sorted(relaxation_data.keys())
+        for rid in sorted_ids:
+            # We assume Amide N usually
+            # NEF requires defining the atom. Usually N.
+            # R1/R2/NOE are 15N relaxation.
+            
+            val = relaxation_data[rid].get(metric_name)
+            if val is None: continue
+            
+            # Map rid to res_name?
+            # We only have sequence string. 'rid' is 1-based index?
+            # 'rid' in relaxation.py comes from struct.res_id.
+            # Assuming struct.res_id matches 1..N of sequence.
+            # Check bounds
+            if rid < 1 or rid > len(sequence):
+                res_n = "UNK"
+            else:
+                s_char = sequence[rid-1]
+                res_n = ONE_TO_THREE_LETTER_CODE.get(s_char, "UNK")
+            
+            count += 1
+            # Uncertainty dummy 5%
+            err = abs(val * 0.05)
+            block += f"      {count} A {rid} {res_n} N {val:.4f} {err:.4f}\n"
+            
+        block += "   stop_\n"
+        block += "save_\n\n"
+        return block
+
+    # T1 (R1 in s^-1, but NEF usually stores T1 or R1? "R1" classification exists)
+    # The classification is "R1", unit "s-1".
+    nc += write_list('R1', 'R1', 's-1')
+    
+    # T2 (R2)
+    nc += write_list('R2', 'R2', 's-1')
+    
+    # NOE (Heteronuclear NOE)
+    # Unit: none (dimensionless)
+    nc += write_list('NOE', 'Heteronuclear_NOE', 'none')
+    
+    with open(filename, "w") as f:
+        f.write(nc)
+        
+    logger.info(f"Wrote relaxation data to {filename}")
