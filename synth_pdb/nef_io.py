@@ -219,5 +219,109 @@ def write_nef_relaxation(
     
     with open(filename, "w") as f:
         f.write(nc)
-        
+    
     logger.info(f"Wrote relaxation data to {filename}")
+
+def write_nef_chemical_shifts(
+    filename: str,
+    sequence: str,
+    shift_data: Dict[str, Dict[int, Dict[str, float]]],
+    system_name: str = "synth-pdb-project"
+) -> None:
+    """
+    write a NEF file with Chemical Shift List.
+    
+    EDUCATIONAL NOTE - NEF Chemical Shift Format:
+    =============================================
+    The NMR Exchange Format (NEF) standardizes how chemical shifts are stored.
+    Unlike older formats (like NMR-STAR 3.1), NEF simplifies the tags.
+    
+    Key Elements:
+    - save_chemical_shift_list: The saveframe container.
+    - _nef_chemical_shift_list.shift_reference_type: Usually "DSS" or "TSP" (internal standards).
+    - Loop containing:
+      - chain_code / sequence_code / residue_name: Identity
+      - atom_name: IUPAC name (e.g., CA, HB2)
+      - value: The shift in ppm.
+    
+    Compatibility:
+    This format is native to CCPNMR Analysis V3 and supported by CYANA/XPLOR-NIH.
+    
+    Args:
+        filename: Output filename
+        sequence: Sequence string
+        shift_data: Dict[chain -> res_id -> atom_name -> shift]
+    """
+    logger.info(f"Writing NEF chemical shifts to {filename}...")
+    
+    nc = "data_" + system_name + "\n\n"
+    # Metadata
+    nc += "_nef_nmr_meta_data.nef_format_version 1.1\n"
+    nc += f"_nef_nmr_meta_data.creation_date {datetime.datetime.now().isoformat()}\n"
+    nc += "_nef_nmr_meta_data.program_name synth-pdb\n\n"
+    
+    # Write Sequence (Required)
+    nc += "save_nef_sequence\n"
+    nc += "   _nef_sequence.sf_category nef_sequence\n"
+    nc += "   _nef_sequence.sf_framecode nef_sequence\n\n"
+    nc += "   loop_\n"
+    nc += "      _nef_sequence.chain_code\n"
+    nc += "      _nef_sequence.sequence_code\n"
+    nc += "      _nef_sequence.residue_name\n"
+    nc += "      _nef_sequence.residue_type\n"
+    
+    from .data import ONE_TO_THREE_LETTER_CODE
+    for i, char in enumerate(sequence):
+        res_num = i + 1
+        res_name = ONE_TO_THREE_LETTER_CODE.get(char, "UNK")
+        nc += f"      A {res_num} {res_name} protein\n"
+    nc += "   stop_\n"
+    nc += "save_\n\n"
+    
+    # Write Chemical Shifts
+    nc += "save_chemical_shift_list\n"
+    nc += "   _nef_chemical_shift_list.sf_category nef_chemical_shift_list\n"
+    nc += "   _nef_chemical_shift_list.sf_framecode chemical_shift_list\n"
+    nc += "   _nef_chemical_shift_list.shift_reference_type DSS\n"
+    nc += "   _nef_chemical_shift_list.shift_unit ppm\n\n"
+    
+    nc += "   loop_\n"
+    nc += "      _nef_chemical_shift.index\n"
+    nc += "      _nef_chemical_shift.chain_code\n"
+    nc += "      _nef_chemical_shift.sequence_code\n"
+    nc += "      _nef_chemical_shift.residue_name\n"
+    nc += "      _nef_chemical_shift.atom_name\n"
+    nc += "      _nef_chemical_shift.value\n"
+    nc += "      _nef_chemical_shift.value_uncertainty\n"
+    
+    idx = 0
+    # Process chain A only for now as generator is single chain
+    chain_shifts = shift_data.get('A', {})
+    
+    sorted_res = sorted(chain_shifts.keys())
+    for res_id in sorted_res:
+        # Determine Residue Name
+        if 1 <= res_id <= len(sequence):
+            aa_char = sequence[res_id-1]
+            res_name = ONE_TO_THREE_LETTER_CODE.get(aa_char, "UNK")
+        else:
+            res_name = "UNK"
+            
+        atoms = chain_shifts[res_id]
+        # Sort atoms for clean output (N, CA, CB, C, H, HA)
+        # Custom sort order:
+        order = {"N":1, "H":2, "CA":3, "HA":4, "CB":5, "C":6}
+        sorted_atoms = sorted(atoms.keys(), key=lambda x: order.get(x, 99))
+        
+        for atom in sorted_atoms:
+            val = atoms[atom]
+            idx += 1
+            # Uncertainty dummy 0.1 ppm
+            nc += f"      {idx} A {res_id} {res_name} {atom} {val:.3f} 0.100\n"
+            
+    nc += "   stop_\n"
+    nc += "save_\n"
+    
+    with open(filename, "w") as f:
+        f.write(nc)
+    logger.info(f"Wrote chemical shifts to {filename}")

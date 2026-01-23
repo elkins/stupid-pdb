@@ -743,6 +743,16 @@ def generate_pdb_content(
             n_coord = np.array([0.0, 0.0, 0.0])
             ca_coord = np.array([BOND_LENGTH_N_CA, 0.0, 0.0])
             c_coord = ca_coord + np.array([BOND_LENGTH_CA_C * np.cos(np.deg2rad(180-ANGLE_N_CA_C)), BOND_LENGTH_CA_C * np.sin(np.deg2rad(180-ANGLE_N_CA_C)), 0.0])
+            
+            # Determine initial PSI for the first residue to propagate to next
+            # We need to sample it based on conformation
+            # residue_conformations is already defined and gap-filled before the loop
+            res0_conf = residue_conformations[0]
+            if res0_conf == 'random':
+                 _, current_psi = _sample_ramachandran_angles(res_name)
+            else:
+                 current_psi = RAMACHANDRAN_PRESETS[res0_conf]['psi'] + np.random.normal(0, 5)
+
         else:
             # Extract previous C from the already built peptide
             # Use unpadded atom names as biotite normalizes them
@@ -786,18 +796,27 @@ def generate_pdb_content(
                 np.random.seed(42)  # Fixed seed for reproducibility in tests
             current_omega = OMEGA_TRANS + np.random.uniform(-OMEGA_VARIATION, OMEGA_VARIATION)
 
+            # Correct Atom Placement Logic:
+            # 1. Place N using previous Psi (Rotation around CA_prev-C_prev)
             n_coord = position_atom_3d_from_internal_coords(
                 prev_n_atom.coord, prev_ca_atom.coord, prev_c_atom.coord,
-                BOND_LENGTH_C_N, ANGLE_CA_C_N, current_omega
+                BOND_LENGTH_C_N, ANGLE_CA_C_N, prev_psi
             )
+            
+            # 2. Place CA using Omega (Rotation around C_prev-N_curr)
             ca_coord = position_atom_3d_from_internal_coords(
                 prev_ca_atom.coord, prev_c_atom.coord, n_coord,
-                BOND_LENGTH_N_CA, ANGLE_C_N_CA, current_phi
+                BOND_LENGTH_N_CA, ANGLE_C_N_CA, current_omega
             )
+            
+            # 3. Place C using Phi (Rotation around N_curr-CA_curr)
             c_coord = position_atom_3d_from_internal_coords(
                 prev_c_atom.coord, n_coord, ca_coord,
-                BOND_LENGTH_CA_C, ANGLE_N_CA_C, current_psi
+                BOND_LENGTH_CA_C, ANGLE_N_CA_C, current_phi
             )
+
+        # Store Psi for next iteration
+        prev_psi = current_psi
         
         # Get reference residue from biotite
         # Use appropriate terminal definitions

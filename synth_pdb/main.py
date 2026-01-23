@@ -216,6 +216,18 @@ def main() -> None:
         help="Global rotational correlation time (tau_m) in nanoseconds (default 10.0).",
     )
 
+    # Phase 9: Synthetic Chemical Shifts
+    parser.add_argument(
+        "--gen-shifts",
+        action="store_true",
+        help="Generate synthetic Chemical Sshift data (H, N, CA, CB, C) based on secondary structure.",
+    )
+    parser.add_argument(
+        "--shift-output",
+        type=str,
+        help="Optional: Output NEF filename for chemical shifts.",
+    )
+
     args = parser.parse_args()
 
     # Set the logging level based on user input
@@ -496,14 +508,15 @@ def main() -> None:
                         logger.error(f"Failed to open 3D viewer: {e}")
                         # Don't fail the entire program if visualization fails
                 
-                # Phase 7 & 8: Synthetic NMR Data (NEF & Relaxation)
-                if args.gen_nef or args.gen_relax:
+                # Phase 7, 8, & 9: Synthetic NMR Data
+                if args.gen_nef or args.gen_relax or args.gen_shifts:
                     if args.mode != "generate":
                         logger.warning("NEF generation is currently only supported in single structure 'generate' mode.")
                     else:
                         from .nmr import calculate_synthetic_noes
-                        from .nef_io import write_nef_file, write_nef_relaxation
+                        from .nef_io import write_nef_file, write_nef_relaxation, write_nef_chemical_shifts
                         from .relaxation import calculate_relaxation_rates
+                        from .chemical_shifts import predict_chemical_shifts
                         import biotite.structure.io.pdb as pdb_io
                         import io
                         import numpy as np
@@ -556,7 +569,21 @@ def main() -> None:
                                     rates, 
                                     field_freq_mhz=args.field
                                 )
-                                logger.info(f"NEF Relaxation Data generated: {os.path.abspath(relax_filename)}")
+                            # 3. Chemical Shifts (Phase 9)
+                            if args.gen_shifts:
+                                logger.info("Predicting Chemical Shifts...")
+                                shifts = predict_chemical_shifts(structure)
+                                
+                                shift_filename = args.shift_output
+                                if not shift_filename:
+                                    shift_filename = output_filename.replace(".pdb", "_shifts.nef")
+                                    
+                                write_nef_chemical_shifts(
+                                    shift_filename,
+                                    seq_str,
+                                    shifts
+                                )
+                                logger.info(f"NEF Chemical Shift Data generated: {os.path.abspath(shift_filename)}")
 
 
             except Exception as e:
