@@ -267,6 +267,13 @@ This effectively demonstrates:
   - Default: `INFO`
   - Use `DEBUG` for detailed validation reports
 
+- `--seed <INT>`: Random seed for reproducible generation
+  - Default: `None` (Random)
+  - Example: `--seed 42`
+  - Guarantees identical output for the same command.
+
+- `--help`: Show the help message and exit.
+
 ### Examples
 
 #### Basic Generation

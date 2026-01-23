@@ -138,9 +138,24 @@ class TestGenerator(unittest.TestCase):
         # ALA=13, GLY=10, VAL=19. Total expected for AGV was 42 with internal OXT.
         # With OXT removed from internal residues (ALA, GLY), we expect 42 - 2 = 40.
         self.assertEqual(len(atom_lines), 40) # Check total atom lines
+    
+    def test_reproducibility_with_seed(self):
+        """Test that using a fixed seed produces identical output."""
+        sequence = "ACDEF"
+        seed = 42
+        
+        # Run 1
+        pdb1 = generate_pdb_content(sequence_str=sequence, conformation="random", seed=seed)
+        
+        # Run 2
+        pdb2 = generate_pdb_content(sequence_str=sequence, conformation="random", seed=seed)
+        
+        # Run 3 (different seed)
+        pdb3 = generate_pdb_content(sequence_str=sequence, conformation="random", seed=seed+1)
+        
+        assert pdb1 == pdb2, "Same seed should produce identical PDB content"
+        assert pdb1 != pdb3, "Different seeds should produce different PDB content (for random conformer)"
 
-        sequence = _resolve_sequence(length=0, user_sequence_str=sequence_str)
-        self.assertEqual(sequence, expected_sequence)
     
     def test_get_sequence_from_mixed_case(self):
         """Test parsing of mixed-case sequence strings."""

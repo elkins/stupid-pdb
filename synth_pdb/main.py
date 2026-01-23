@@ -250,6 +250,13 @@ def main() -> None:
         type=str,
         help="Optional: Output NEF filename for chemical shifts.",
     )
+    
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed for reproducible structure generation. If set, the same command will produce the exact same PDB file.",
+    )
 
     args = parser.parse_args()
 
@@ -341,7 +348,9 @@ def main() -> None:
                 structure=args.structure,  # NEW: per-region conformation support
                 optimize_sidechains=args.optimize,
                 minimize_energy=args.minimize,
+
                 forcefield=args.forcefield,
+                seed=args.seed,
             )
 
             if not current_pdb_content:

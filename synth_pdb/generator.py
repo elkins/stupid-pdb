@@ -638,6 +638,7 @@ def generate_pdb_content(
     optimize_sidechains: bool = False,
     minimize_energy: bool = False,
     forcefield: str = 'amber14-all.xml',
+    seed: Optional[int] = None,
 ) -> str:
     """
     Generates PDB content for a linear peptide chain.
@@ -660,6 +661,10 @@ def generate_pdb_content(
                   Example: "1-10:alpha,11-15:random,16-30:beta"
                   If provided, overrides conformation for specified regions.
                   Unspecified residues use the default conformation parameter.
+        optimize_sidechains: Run Monte Carlo side-chain optimization
+        minimize_energy: Run OpenMM energy minimization
+        forcefield: Forcefield to use for minimization
+        seed: Random seed for reproducible generation
     
     Returns:
         str: Complete PDB file content
@@ -674,6 +679,11 @@ def generate_pdb_content(
     - Helix-turn-helix motifs: two alpha helices connected by a turn
     This feature allows users to create these realistic structures.
     """
+    if seed is not None:
+         logger.info(f"Setting random seed to {seed} for reproducibility.")
+         random.seed(seed)
+         np.random.seed(seed)
+         
     sequence = _resolve_sequence(
         length=length,
         user_sequence_str=sequence_str,
