@@ -140,6 +140,21 @@ Generate the best of 10 attempts with clash refinement:
 synth-pdb --length 20 --best-of-N 10 --refine-clashes 5 --output refined_peptide.pdb
 ```
 
+## 🚀 Quick Visual Demo
+
+Want to see the new **Physics + Visualization** capabilities in action?
+
+Run this command to generate a **Leucine Zipper** (classic alpha helix), **minimize** its energy using OpenMM, and immediately **visualize** it in your browser:
+
+```bash
+synth-pdb --sequence "LKELEKELEKELEKELEKELEKEL" --conformation alpha --minimize --visualize
+```
+
+This effectively demonstrates:
+1.  **Generation**: Creating the alpha-helical backbone.
+2.  **Minimization**: "Relaxing" the structure (geometry regularization).
+3.  **Visualization**: Launching the interactive 3D viewer.
+
 ## Usage
 
 ### Command-Line Arguments
@@ -196,6 +211,21 @@ synth-pdb --length 20 --best-of-N 10 --refine-clashes 5 --output refined_peptide
   - Applies after structure selection
   - Iterates until improvements stop or max iterations reached
   - Example: `--refine-clashes 10`
+
+#### **Physics & Advanced Refinement (NEW!)**
+
+- `--minimize`: Run physics-based energy minimization (OpenMM).
+  - Uses implicit solvent (OBC2) and AMBER forcefield.
+  - Highly recommended for "realistic" geometry.
+  - Example: `--minimize`
+
+- `--optimize`: Run Monte Carlo side-chain optimization.
+  - Reduces steric clashes by rotating side chains.
+  - Example: `--optimize`
+
+- `--forcefield <NAME>`: Specify OpenMM forcefield.
+  - Default: `amber14-all.xml`
+  - Example: `--forcefield amber14-all.xml`
 
 #### **Output Options**
 
@@ -641,6 +671,73 @@ For those interested in proper protein structure modeling:
 - **Ramachandran Plot**: Ramachandran, G. N.; Ramakrishnan, C.; Sasisekharan, V. (1963). "Stereochemistry of polypeptide chain configurations"
 - **Rotamer Libraries**: Dunbrack, R. L. (2002). "Rotamer libraries in the 21st century"
 - **IUPAC Nomenclature**: [https://iupac.qmul.ac.uk/](https://iupac.qmul.ac.uk/)
+
+## Biophysics 101: Understanding Energy Minimization
+
+This section explains the science behind the new `--minimize` feature.
+
+### 🏔️ The Energy Landscape
+
+Imagine a ball rolling on a hilly landscape.
+- **Height** = Potential Energy (unstable)
+- **Valleys** = Stable conformations (low energy)
+- **Gravity** = Interactions between atoms (forces)
+
+**Energy Minimization** is the process of moving atoms "downhill" to find the nearest stable shape.
+
+```mermaid
+graph TD
+    A[Initial Structure<br>(High Energy)] -->|Forces push atoms| B{Gradient Descent}
+    B -->|Move downhill| C[Lower Energy State]
+    C -->|Are forces zero?| D{Converged?}
+    D -- No --> B
+    D -- Yes --> E[Minimized Structure<br>(Local Minimum)]
+    
+    style A fill:#ffcccc,stroke:#333
+    style E fill:#ccffcc,stroke:#333
+```
+
+### 💧 Implicit vs. Explicit Solvent
+
+Proteins exist in water. Simulating every water molecule is expensive.
+- **Explicit Solvent**: Simulating thousands of H2O molecules. (Accurate but Slow)
+- **Implicit Solvent**: Treating water as a mathematical continuous field that shields charges. (Fast and Good Approximation)
+
+`synth-pdb` uses **Implicit Solvent (OBC2)** to get realistic results quickly.
+
+### 🏗️ The Generation Pipeline
+
+How `synth-pdb` builds a protein from scratch:
+
+```mermaid
+sequenceDiagram
+    participant CLI as User
+    participant Gen as Generator
+    participant Geom as Geometry
+    participant Pack as Packer (Phase 1)
+    participant Phys as Physics (Phase 2)
+    
+    CLI->>Gen: Request "ALA-GLY-SER"
+    Gen->>Geom: Build Backbone (N-CA-C-O)
+    Geom-->>Gen: Linear Chain
+    Gen->>Geom: Add Sidechains
+    Gen->>Pack: Optimize Rotamers
+    Note right of Pack: Fixes severe<br>clashes (overlap)
+    Pack-->>Gen: Packed Structure
+    Gen->>Phys: Minimize Energy (OpenMM)
+    Note right of Phys: Relaxes bonds<br>and angles
+    Phys-->>Gen: Minimized Structure
+    Gen->>CLI: Output PDB
+```
+
+### 🧲 Note for NMR Spectroscopists
+
+If you are coming from an NMR background (XPLOR-NIH, CYANA, CNS):
+
+- **Structure Calculation vs. Generation**: `synth-pdb` mimics the *final stage* of an NMR structure calculation: Geometry Regularization (minimization in implicit solvent).
+- **Proton Detection**: Unlike X-ray, NMR relies on 1H spins. That's why we explicitly add hydrogens before minimization—they are the "eyes" of the forcefield, just as they are for NOEs.
+- **Ensembles**: Use `--mode decoys` to generate an ensemble of structures. This is analogous to the "bundle" of low-energy structures you calculate to satisfy NOE restraints.
+- **Order Parameters**: The generated B-factors in `synth-pdb` follow the same pattern as Order Parameters ($S^2$) or atomic RMSD across an ensemble (low in core, high in tails).
 
 For production-quality structure generation, consider:
 - **MODELLER** (homology modeling)

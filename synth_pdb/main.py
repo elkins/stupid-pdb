@@ -13,6 +13,9 @@ import os
 from pathlib import Path
 
 from .generator import generate_pdb_content
+from .decoys import DecoyGenerator
+from .docking import DockingPrep
+import os
 from .validator import PDBValidator
 from .pdb_utils import extract_atomic_content, assemble_pdb_content
 from .viewer import view_structure_in_browser
@@ -132,6 +135,49 @@ def main() -> None:
         action="store_true",
         help="Open generated structure in browser-based 3D viewer (uses 3Dmol.js). Interactive visualization with rotation, zoom, and style controls.",
     )
+    parser.add_argument(
+        "--optimize",
+        action="store_true",
+        help="Run Monte Carlo side-chain optimization to minimize steric clashes (Advanced).",
+    )
+    parser.add_argument(
+        "--minimize",
+        action="store_true",
+        help="Run physics-based energy minimization using OpenMM (Phase 2). Requires 'openmm' installed.",
+    )
+    parser.add_argument(
+        "--forcefield",
+        type=str,
+        default="amber14-all.xml",
+        help="Forcefield to use for minimization (default: amber14-all.xml).",
+    )
+    
+    # Phase 3: Research Utilities Arguments
+    # Using 'mode' argument to distinguish workflows without breaking BC (default is 'generate')
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="generate",
+        choices=["generate", "decoys", "docking"],
+        help="Operation mode: 'generate' (default) single structure, 'decoys' ensemble, 'docking' preparation (PQR).",
+    )
+    parser.add_argument(
+        "--n-decoys",
+        type=int,
+        default=10,
+        help="Number of decoys to generate (for --mode decoys).",
+    )
+    parser.add_argument(
+        "--rmsd-range",
+        type=str,
+        default="0.0-999.0",
+        help="Target RMSD range in Angstroms 'min-max' (for --mode decoys).",
+    )
+    parser.add_argument(
+        "--input-pdb",
+        type=str,
+        help="Input PDB file path (required for --mode docking).",
+    )
 
     args = parser.parse_args()
 
@@ -221,6 +267,9 @@ def main() -> None:
                 use_plausible_frequencies=args.plausible_frequencies,
                 conformation=args.conformation,
                 structure=args.structure,  # NEW: per-region conformation support
+                optimize_sidechains=args.optimize,
+                minimize_energy=args.minimize,
+                forcefield=args.forcefield,
             )
 
             if not current_pdb_content:

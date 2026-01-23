@@ -394,88 +394,93 @@ AMINO_ACID_ATOMS: Dict[str, List[Dict[str, Any]]] = {
 # Reference: Dunbrack & Cohen (1997) Protein Science
 # Note: Only the most common rotamer is included for each amino acid
 
-ROTAMER_LIBRARY: Dict[str, Dict[str, List[float]]] = {
+ROTAMER_LIBRARY: Dict[str, List[Dict[str, List[float]]]] = {
     # Aliphatic amino acids
-    'ALA': {},  # No side-chain dihedrals (only CB)
-    'VAL': {
-        'chi1': [-60],  # Gauche- (most common)
-    },
-    'LEU': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [65],   # Gauche+
-    },
-    'ILE': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [170],  # Trans
-    },
-    'MET': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [180],  # Trans
-        'chi3': [70],   # Gauche+
-    },
+    'ALA': [],  # No side-chain dihedrals
+    'VAL': [
+        {'chi1': [-60.0], 'prob': 0.70},  # Gauche- (most common)
+        {'chi1': [180.0], 'prob': 0.20},  # Trans
+        {'chi1': [60.0],  'prob': 0.10},  # Gauche+
+    ],
+    'LEU': [
+        {'chi1': [-60.0], 'chi2': [65.0], 'prob': 0.60},   # g-, g+
+        {'chi1': [-60.0], 'chi2': [180.0], 'prob': 0.25},  # g-, t
+        {'chi1': [180.0], 'chi2': [65.0], 'prob': 0.10},   # t, g+
+    ],
+    'ILE': [
+        {'chi1': [-60.0], 'chi2': [170.0], 'prob': 0.60},  # g-, t
+        {'chi1': [-60.0], 'chi2': [-60.0], 'prob': 0.25},  # g-, g-
+        {'chi1': [180.0], 'chi2': [170.0], 'prob': 0.10},  # t, t
+    ],
+    'MET': [
+        {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [70.0], 'prob': 0.40},
+        {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [180.0],'prob': 0.30},
+    ],
     
     # Aromatic amino acids
-    'PHE': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [90],   # Gauche+
-    },
-    'TYR': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [90],   # Gauche+
-    },
-    'TRP': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [-90],  # Gauche-
-    },
+    'PHE': [
+        {'chi1': [-60.0], 'chi2': [90.0], 'prob': 0.50},   # g-, g+ (perp)
+        {'chi1': [180.0], 'chi2': [90.0], 'prob': 0.30},   # t, g+
+        {'chi1': [-60.0], 'chi2': [0.0],  'prob': 0.10},   # g-, planar (rare)
+    ],
+    'TYR': [
+        {'chi1': [-60.0], 'chi2': [90.0], 'prob': 0.50},
+        {'chi1': [180.0], 'chi2': [90.0], 'prob': 0.30},
+    ],
+    'TRP': [
+        {'chi1': [-60.0], 'chi2': [-90.0], 'prob': 0.50},
+        {'chi1': [180.0], 'chi2': [-90.0], 'prob': 0.30},
+    ],
     
-    # Polar uncharged amino acids
-    'SER': {
-        'chi1': [60],   # Gauche+ (most common)
-    },
-    'THR': {
-        'chi1': [60],   # Gauche+
-    },
-    'CYS': {
-        'chi1': [-60],  # Gauche-
-    },
-    'ASN': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [-20],  # Near-cis
-    },
-    'GLN': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [60],   # Gauche+
-        'chi3': [0],    # Cis
-    },
+    # Polar uncharged
+    'SER': [
+        {'chi1': [60.0], 'prob': 0.45},   # g+
+        {'chi1': [-60.0], 'prob': 0.35},  # g-
+        {'chi1': [180.0], 'prob': 0.20},  # t
+    ],
+    'THR': [
+        {'chi1': [60.0], 'prob': 0.45},   # g+
+        {'chi1': [-60.0], 'prob': 0.45},  # g-
+        {'chi1': [180.0], 'prob': 0.10},  # t
+    ],
+    'CYS': [
+        {'chi1': [-60.0], 'prob': 0.50},
+        {'chi1': [180.0], 'prob': 0.30},
+        {'chi1': [60.0], 'prob': 0.20},
+    ],
+    'ASN': [
+        {'chi1': [-60.0], 'chi2': [-20.0], 'prob': 0.40},
+        {'chi1': [180.0], 'chi2': [-20.0], 'prob': 0.30},
+        {'chi1': [-60.0], 'chi2': [180.0], 'prob': 0.15}, # Flip
+    ],
+    'GLN': [
+        {'chi1': [-60.0], 'chi2': [60.0], 'chi3': [0.0], 'prob': 0.40},
+        {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [0.0],'prob': 0.30},
+    ],
     
-    # Charged amino acids
-    'ASP': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [0],    # Cis
-    },
-    'GLU': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [180],  # Trans
-        'chi3': [0],    # Cis
-    },
-    'LYS': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [180],  # Trans
-        'chi3': [180],  # Trans
-        'chi4': [180],  # Trans (extended)
-    },
-    'ARG': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [180],  # Trans
-        'chi3': [180],  # Trans
-        'chi4': [-85],  # Gauche- (for guanidinium)
-    },
-    'HIS': {
-        'chi1': [-60],  # Gauche-
-        'chi2': [-75],  # Gauche-
-    },
+    # Charged
+    'ASP': [
+        {'chi1': [-60.0], 'chi2': [0.0], 'prob': 0.45},
+        {'chi1': [180.0], 'chi2': [0.0], 'prob': 0.35},
+    ],
+    'GLU': [
+        {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [0.0], 'prob': 0.40},
+        {'chi1': [180.0], 'chi2': [180.0], 'chi3': [0.0], 'prob': 0.30},
+    ],
+    'LYS': [
+        {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [180.0], 'prob': 0.40},
+        {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [60.0],  'prob': 0.20},
+    ],
+    'ARG': [
+        {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [-85.0], 'prob': 0.35},
+        {'chi1': [180.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [-85.0], 'prob': 0.25},
+    ],
+    'HIS': [
+        {'chi1': [-60.0], 'chi2': [-75.0], 'prob': 0.40},
+        {'chi1': [180.0], 'chi2': [-75.0], 'prob': 0.30},
+    ],
     
     # Special cases
-    'GLY': {},  # No side chain
-    'PRO': {},  # Cyclic - chi angles constrained by ring
+    'GLY': [],
+    'PRO': [],
 }

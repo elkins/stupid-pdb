@@ -122,8 +122,9 @@ class TestGenerator(unittest.TestCase):
         expected_sequence = ["ALA", "GLY", "VAL"]
         content = generate_pdb_content(sequence_str=sequence_str) # Removed full_atom
         atom_lines = [line for line in content.strip().split("\n") if line.startswith("ATOM")]
-        # ALA=13, GLY=10, VAL=19. Total expected for AGV will be 13+10+19 = 42
-        self.assertEqual(len(atom_lines), 42)
+        # ALA=13, GLY=10, VAL=19. Total expected for AGV was 42 with internal OXT.
+        # With OXT removed from internal residues (ALA, GLY), we expect 42 - 2 = 40.
+        self.assertEqual(len(atom_lines), 40)
         
         sequence = _resolve_sequence(length=0, user_sequence_str=sequence_str) # length should be ignored
         self.assertEqual(sequence, expected_sequence)
@@ -134,8 +135,9 @@ class TestGenerator(unittest.TestCase):
         expected_sequence = ["ALA", "GLY", "VAL"]
         content = generate_pdb_content(sequence_str=sequence_str) # Removed full_atom
         atom_lines = [line for line in content.strip().split("\n") if line.startswith("ATOM")]
-        # ALA=13, GLY=10, VAL=19. Total expected for AGV will be 13+10+19 = 42
-        self.assertEqual(len(atom_lines), 42) # Check total atom lines
+        # ALA=13, GLY=10, VAL=19. Total expected for AGV was 42 with internal OXT.
+        # With OXT removed from internal residues (ALA, GLY), we expect 42 - 2 = 40.
+        self.assertEqual(len(atom_lines), 40) # Check total atom lines
 
         sequence = _resolve_sequence(length=0, user_sequence_str=sequence_str)
         self.assertEqual(sequence, expected_sequence)

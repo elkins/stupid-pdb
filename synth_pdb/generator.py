@@ -1,5 +1,17 @@
 import random
 import numpy as np
+# EDUCATIONAL OVERVIEW - How Synthetic Protein Generation Works:
+# 1. Sequence Resolution: Determine the amino acid string (e.g., "ALA-GLY-SER").
+# 2. Backbone Generation: Place N-CA-C-O atoms for each residue.
+#    - Geometrically constructing the chain using Bond Lengths and Angles.
+#    - Setting Dihedral Angles (Phi/Psi) to define secondary structure (Helix/Sheet).
+# 3. Side-Chain Placement: Add side-chain atoms (CB, CG...) based on Rotamer Libraries.
+# 4. Refinement (Optional):
+#    - Packing: Optimize rotamers to avoid clashes.
+# 5. Metadata: Fill in B-factors and Occupancy.
+#    - X-ray: Represents thermal motion.
+#    - NMR: Often used to represent local RMSD across the ensemble.
+
 import logging
 from typing import List, Optional, Dict
 from .data import (
@@ -19,12 +31,22 @@ from .data import (
     RAMACHANDRAN_REGIONS,
 )
 from .pdb_utils import create_pdb_header, create_pdb_footer
+from .geometry import (
+    position_atom_3d_from_internal_coords,
+    calculate_angle,
+)
+# Re-export for backward compatibility with tests
+_position_atom_3d_from_internal_coords = position_atom_3d_from_internal_coords
+
+from .packing import optimize_sidechains as run_optimization
+from .physics import EnergyMinimizer
+import os
+import shutil
+import tempfile
 
 import biotite.structure as struc
 import biotite.structure.io.pdb as pdb
 import io
-
-from synth_pdb.validator import PDBValidator  # Temporary import for debugging
 
 # Convert angles to radians for numpy trigonometric functions
 ANGLE_N_CA_C_RAD = np.deg2rad(ANGLE_N_CA_C)
@@ -76,7 +98,15 @@ def _calculate_bfactor(
     
     2. Position Along Chain:
        - Core residues: 10-20 Ų (buried, constrained)
-       - Surface residues: 20-30 Ų (solvent-exposed, more mobile)
+    3. NMR Perspective (Order Parameters):
+       For NMR structures, the "B-factor" column is often repurposed.
+       - It can store the RMSD of the atom across the ensemble of models.
+       - High B-factor = High RMSD = Undefined structure (e.g., flexible tails).
+       - It can also represent the Order Parameter (S^2), indicating flexibility
+         calculated from relaxation data (T1, T2, NOE).
+       
+       In this synthetic generator, we simulate B-factors that follow these
+       universal patterns of rigidity vs. flexibility.
        - Terminal residues: 30-50 Ų ("terminal fraying" - fewer constraints)
     
     3. Residue-Specific Effects:
@@ -205,62 +235,6 @@ def create_atom_line(
         f"{element: >2}  "
     )
 
-def _position_atom_3d_from_internal_coords(
-    p1: np.ndarray,
-    p2: np.ndarray,
-    p3: np.ndarray,
-    bond_length: float,
-    bond_angle_deg: float,
-    dihedral_angle_deg: float,
-) -> np.ndarray:
-    """
-    Calculates the 3D coordinates of a new atom (P4) given the coordinates of three
-    preceding atoms (P1, P2, P3) and the internal coordinates.
-    """
-    bond_angle_rad = np.deg2rad(bond_angle_deg)
-    dihedral_angle_rad = np.deg2rad(dihedral_angle_deg)
-
-    a = p2 - p1
-    b = p3 - p2
-    c = np.cross(a, b)
-    d = np.cross(c, b)
-    a /= np.linalg.norm(a)
-    b /= np.linalg.norm(b)
-    c /= np.linalg.norm(c)
-    d /= np.linalg.norm(d)
-
-
-    p4 = p3 + bond_length * (
-        -b * np.cos(bond_angle_rad)
-        + d * np.sin(bond_angle_rad) * np.cos(dihedral_angle_rad)
-        + c * np.sin(bond_angle_rad) * np.sin(dihedral_angle_rad)
-    )
-    return p4
-
-
-def _calculate_angle(
-    coord1: np.ndarray, coord2: np.ndarray, coord3: np.ndarray
-) -> float:
-    """
-    Calculates the angle (in degrees) formed by three coordinates, with coord2 as the vertex.
-    """
-    vec1 = coord1 - coord2
-    vec2 = coord3 - coord2
-
-    # Avoid division by zero for zero-length vectors
-    norm_vec1 = np.linalg.norm(vec1)
-    norm_vec2 = np.linalg.norm(vec2)
-
-    if norm_vec1 == 0 or norm_vec2 == 0:
-        return 0.0  # Or raise an error, depending on desired behavior for degenerate cases
-
-    cosine_angle = np.dot(vec1, vec2) / (norm_vec1 * norm_vec2)
-    # Ensure cosine_angle is within [-1, 1] to avoid issues with arccos due to floating point inaccuracies
-    cosine_angle = np.clip(cosine_angle, -1.0, 1.0)
-    angle_rad = np.arccos(cosine_angle)
-    return np.degrees(angle_rad)
-
-
 def _place_atom_with_dihedral(
     atom1: np.ndarray,
     atom2: np.ndarray,
@@ -272,9 +246,9 @@ def _place_atom_with_dihedral(
     """
     Place a new atom using bond length, angle, and dihedral.
     
-    Wrapper around _position_atom_3d_from_internal_coords with clearer naming.
+    Wrapper around position_atom_3d_from_internal_coords with clearer naming.
     """
-    return _position_atom_3d_from_internal_coords(
+    return position_atom_3d_from_internal_coords(
         atom1, atom2, atom3, bond_length, bond_angle, dihedral
     )
 
@@ -661,6 +635,9 @@ def generate_pdb_content(
     use_plausible_frequencies: bool = False,
     conformation: str = 'alpha',
     structure: Optional[str] = None,
+    optimize_sidechains: bool = False,
+    minimize_energy: bool = False,
+    forcefield: str = 'amber14-all.xml',
 ) -> str:
     """
     Generates PDB content for a linear peptide chain.
@@ -809,15 +786,15 @@ def generate_pdb_content(
                 np.random.seed(42)  # Fixed seed for reproducibility in tests
             current_omega = OMEGA_TRANS + np.random.uniform(-OMEGA_VARIATION, OMEGA_VARIATION)
 
-            n_coord = _position_atom_3d_from_internal_coords(
+            n_coord = position_atom_3d_from_internal_coords(
                 prev_n_atom.coord, prev_ca_atom.coord, prev_c_atom.coord,
                 BOND_LENGTH_C_N, ANGLE_CA_C_N, current_omega
             )
-            ca_coord = _position_atom_3d_from_internal_coords(
+            ca_coord = position_atom_3d_from_internal_coords(
                 prev_ca_atom.coord, prev_c_atom.coord, n_coord,
                 BOND_LENGTH_N_CA, ANGLE_C_N_CA, current_phi
             )
-            c_coord = _position_atom_3d_from_internal_coords(
+            c_coord = position_atom_3d_from_internal_coords(
                 prev_c_atom.coord, n_coord, ca_coord,
                 BOND_LENGTH_CA_C, ANGLE_N_CA_C, current_psi
             )
@@ -830,6 +807,15 @@ def generate_pdb_content(
             ref_res_template = struc.info.residue(res_name, 'C_TERM')
         else: # Internal residue
             ref_res_template = struc.info.residue(res_name, 'INTERNAL')
+
+        # EDUCATIONAL NOTE - Peptide Bond Chemistry:
+        # A peptide bond forms via dehydration synthesis (loss of H2O).
+        # The Carboxyl group (COOH) of one amino acid joins the Amine group (NH2) of the next.
+        # This means internal residues lose their terminal Oxygen (OXT).
+        # We must explicitly remove OXT atoms from all residues except the C-terminus
+        # to represent a continuous polypeptide chain correctly.
+        if i < len(sequence) - 1:
+            ref_res_template = ref_res_template[ref_res_template.atom_name != "OXT"]
 
         if res_name in ROTAMER_LIBRARY:
             rotamer_data = ROTAMER_LIBRARY[res_name]
@@ -851,9 +837,9 @@ def generate_pdb_content(
                     cg_template = ref_res_template[ref_res_template.atom_name == "CG"][0]
                     
                     bond_length_cb_cg = np.linalg.norm(cg_template.coord - cb_template.coord)
-                    angle_ca_cb_cg = _calculate_angle(ca_template.coord, cb_template.coord, cg_template.coord)
+                    angle_ca_cb_cg = calculate_angle(ca_template.coord, cb_template.coord, cg_template.coord)
 
-                    cg_coord = _position_atom_3d_from_internal_coords(
+                    cg_coord = position_atom_3d_from_internal_coords(
                         n_template.coord, ca_template.coord, cb_template.coord,
                         bond_length_cb_cg, angle_ca_cb_cg, chi1_target
                     )
@@ -903,6 +889,59 @@ def generate_pdb_content(
     
     # After all residues are added, ensure global chain_id is 'A' (redundant if already set above, but good safeguard)
     peptide.chain_id = np.array(["A"] * peptide.array_length(), dtype="U1")
+    
+    # EDUCATIONAL NOTE - Side-Chain Optimization:
+    # If requested, run Monte Carlo optimization to fix steric clashes.
+    # This is "Phase 1" of biophysical realism.
+    if optimize_sidechains:
+        logger.info("Running side-chain optimization...")
+        peptide = run_optimization(peptide)
+
+    # EDUCATIONAL NOTE - Energy Minimization (Phase 2):
+    # OpenMM requires a file-based interaction usually for easy topology handling from PDB.
+    # So we write the current state to a temp file, minimize it, and read it back (or return the content).
+    if minimize_energy:
+        logger.info("Running energy minimization (OpenMM)...")
+        try:
+            # We need a temp file for input
+            # Create a temporary directory to avoid race conditions/clutter
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                input_pdb_path = os.path.join(tmpdirname, "pre_min.pdb")
+                output_pdb_path = os.path.join(tmpdirname, "minimized.pdb")
+                
+                # Write current peptide to input_pdb_path
+                # We need to construct a basic PDB file first
+                # Use atomic content + minimal header
+                
+                # CRITICAL Fix for OpenMM:
+                # OpenMM's addHydrogens is robust if we start with clean headers.
+                # But inputting existing Hydrogens (from Biotite templates) often causes
+                # template mismatch errors ("too many H atoms" or naming issues).
+                # So we STRIP all hydrogens before passing to OpenMM.
+                # Biotite elements are upper case.
+                peptide_heavy = peptide[peptide.element != "H"]
+                
+                # Actually we can use assemble_pdb_content but we need atomic lines first
+                # Or just use biotite to write
+                pdb_file = pdb.PDBFile()
+                pdb_file.set_structure(peptide_heavy)
+                pdb_file.write(input_pdb_path)
+                
+                minimizer = EnergyMinimizer(forcefield_name=forcefield)
+                # We use add_hydrogens_and_minimize because synth-pdb lacks H by default
+                success = minimizer.add_hydrogens_and_minimize(input_pdb_path, output_pdb_path)
+                
+                if success:
+                    logger.info("Minimization successful.")
+                    # Read back the optimized structure
+                    # We return the CONTENT of this file
+                    with open(output_pdb_path, 'r') as f:
+                        return f.read()
+                else:
+                    logger.error("Minimization failed. Returning un-minimized structure.")
+        except Exception as e:
+            logger.error(f"Error during minimization workflow: {e}")
+            # Fallthrough to return original peptide content
     
     # Assign sequential atom_id to all atoms in the peptide AtomArray
     peptide.atom_id = np.arange(1, peptide.array_length() + 1)
