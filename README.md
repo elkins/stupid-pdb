@@ -699,6 +699,10 @@ This project is provided as-is for educational and testing purposes.
 
 ---
 
+## Citation
+
+If you use `synth-pdb` in your research, please cite it using the metadata in the `CITATION.cff` file in this repository.
+
 ## 🛠️ Software & Libraries
 
 This project relies on the following open-source scientific software:
@@ -758,16 +762,17 @@ Imagine a ball rolling on a hilly landscape.
 
 **Energy Minimization** is the process of moving atoms "downhill" to find the nearest stable shape.
 
-```mermaid
-graph TD
-    A[Initial Structure<br>(High Energy)] -->|Forces push atoms| B{Gradient Descent}
-    B -->|Move downhill| C[Lower Energy State]
-    C -->|Are forces zero?| D{Converged?}
-    D -- No --> B
-    D -- Yes --> E[Minimized Structure<br>(Local Minimum)]
-    
-    style A fill:#ffcccc,stroke:#333
-    style E fill:#ccffcc,stroke:#333
+```text
+      High Energy
+      (Unstable)
+          |
+         / \       Forces push atoms "downhill"
+        /   \     (Gradient Descent)
+       /     \
+      /       \___
+     /            \
+    /              \__ Low Energy
+   /                  (Stable / Minimized)
 ```
 
 ### 💧 Implicit vs. Explicit Solvent
@@ -782,25 +787,12 @@ Proteins exist in water. Simulating every water molecule is expensive.
 
 How `synth-pdb` builds a protein from scratch:
 
-```mermaid
-sequenceDiagram
-    participant CLI as User
-    participant Gen as Generator
-    participant Geom as Geometry
-    participant Pack as Packer (Phase 1)
-    participant Phys as Physics (Phase 2)
-    
-    CLI->>Gen: Request "ALA-GLY-SER"
-    Gen->>Geom: Build Backbone (N-CA-C-O)
-    Geom-->>Gen: Linear Chain
-    Gen->>Geom: Add Sidechains
-    Gen->>Pack: Optimize Rotamers
-    Note right of Pack: Fixes severe<br>clashes (overlap)
-    Pack-->>Gen: Packed Structure
-    Gen->>Phys: Minimize Energy (OpenMM)
-    Note right of Phys: Relaxes bonds<br>and angles
-    Phys-->>Gen: Minimized Structure
-    Gen->>CLI: Output PDB
+```text
+[User] -> [Generator] -> [Geometry Builder] -> [Sidechain Packer] -> [Energy Minimizer] -> [PDB File]
+             ^                  |                    |                      |
+             |              (N-CA-C-O)           (Rotamers)             (OpenMM)
+             |                                       |                      |
+             +---------------------------------------+----------------------+
 ```
 
 #### NMR: Relaxation & Order Parameters
