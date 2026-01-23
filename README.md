@@ -212,7 +212,7 @@ This effectively demonstrates:
   - Iterates until improvements stop or max iterations reached
   - Example: `--refine-clashes 10`
 
-#### **Physics & Advanced Refinement (NEW!)**
+#### **Physics & Advanced Refinement **
 
 - `--minimize`: Run physics-based energy minimization (OpenMM).
   - Uses implicit solvent (OBC2) and AMBER forcefield.
@@ -345,7 +345,7 @@ synth-pdb --sequence "CPHCGKSFSQKSDLVKHQRT" --conformation random --best-of-N 5 
 - Combine with `--validate` to show how different conformations affect structural quality
 - Try `--best-of-N` and `--refine-clashes` to explore quality control strategies
 
-#### Visualization-Optimized Examples (**NEW!**)
+#### Visualization-Optimized Examples
 
 These examples are specifically designed to look great in the 3D viewer with `--visualize`:
 
@@ -385,7 +385,7 @@ synth-pdb --sequence "GPGPPGPPGPPGPP" --conformation ppii --visualize
 - **In the viewer**: Use "Cartoon" style and "Spectrum" color for best results
 - **Interactive**: Rotate with left-click, zoom with scroll, pan with right-click
 
-#### Mixed Secondary Structures (**NEW!**)
+#### Mixed Secondary Structures
 
 The `--structure` parameter enables creation of realistic protein-like structures with different conformations in different regions:
 
@@ -507,7 +507,7 @@ When `--validate` is enabled, the tool checks for:
    - Odd cysteine counts (unpaired cysteines)
    - Poly-proline or poly-glycine runs
 
-7. **Chirality** (**NEW!**): Validates L-amino acid stereochemistry
+7. **Chirality**: Validates L-amino acid stereochemistry
    - Checks improper dihedral angle N-CA-C-CB
    - L-amino acids should have proper chirality (improper dihedral ±60° to ±120°)
    - Glycine is automatically exempt (no CB atom)
@@ -678,14 +678,38 @@ This project is provided as-is for educational and testing purposes.
 
 ---
 
-## References & Further Reading
+## 🛠️ Software & Libraries
 
-For those interested in proper protein structure modeling:
+This project relies on the following open-source scientific software:
 
-- **PDB Format Specification**: [https://www.wwpdb.org/documentation/file-format](https://www.wwpdb.org/documentation/file-format)
-- **Ramachandran Plot**: Ramachandran, G. N.; Ramakrishnan, C.; Sasisekharan, V. (1963). "Stereochemistry of polypeptide chain configurations"
-- **Rotamer Libraries**: Dunbrack, R. L. (2002). "Rotamer libraries in the 21st century"
-- **IUPAC Nomenclature**: [https://iupac.qmul.ac.uk/](https://iupac.qmul.ac.uk/)
+- **[OpenMM](https://openmm.org/)**: High-performance molecular dynamics toolkit used for physics-based energy minimization (Implicit Solvent/OBC2).
+- **[Biotite](https://www.biotite-python.org/)**: Comprehensive library for structural biology involved in PDB IO, atom manipulation, and geometric analysis.
+- **[3Dmol.js](https://3dmol.csb.pitt.edu/)**: JavaScript library for molecular visualization used in the `--visualize` browser-based viewer.
+- **[NumPy](https://numpy.org/)**: Fundamental package for scientific computing and matrix operations.
+
+## 📚 References & Scientific Publications
+
+### Key Publications in NMR Structure Validation
+Special acknowledgement to the foundational work of **G.T. Montelione** and **Roberto Tejero** in establishing rigorous metrics for NMR structure quality.
+
+1.  **Protein Structure Validation Suite (PSVS)**
+    *   Bhattacharya, A., **Tejero, R.**, & **Montelione, G. T.** (2007). "Evaluating protein structures determined by structural genomics consortia." *Proteins: Structure, Function, and Bioinformatics*, 66(4), 778-795.
+    *   [Link to Publisher](https://onlinelibrary.wiley.com/doi/abs/10.1002/prot.21165)
+
+2.  **RPF Scores (Recall, Precision, F-measure)**
+    *   Huang, Y. J., Powers, R., & **Montelione, G. T.** (2005). "Protein NMR recall, precision, and F-measure scores (RPF scores): structure quality assessment measures based on information retrieval statistics." *Journal of the American Chemical Society*, 127(6), 1665-1674.
+    *   [Link to Publisher](https://pubs.acs.org/doi/10.1021/ja0471963)
+
+3.  **DP Score (Discriminant Power)**
+    *   Huang, Y. J., **Tejero, R.**, Powers, R., & **Montelione, G. T.** (2006). "A topology-constrained distance network algorithm for protein structure determination from NOESY data." *Proteins: Structure, Function, and Bioinformatics*, 62(3), 587-603.
+    *   [Link to Publisher](https://onlinelibrary.wiley.com/doi/abs/10.1002/prot.20784)
+
+### General Protein Structure References
+
+- **Ramachandran Plot**: Ramachandran, G. N., Ramakrishnan, C., & Sasisekharan, V. (1963). "Stereochemistry of polypeptide chain configurations." *Journal of Molecular Biology*.
+- **Rotamer Libraries**: Dunbrack, R. L. (2002). "Rotamer libraries in the 21st century." *Current Opinion in Structural Biology*.
+- **PDB Format Specification**: [wwPDB Documentation](https://www.wwpdb.org/documentation/file-format)
+- **IUPAC Nomenclature**: [IUPAC-IUBMB Joint Commission on Biochemical Nomenclature](https://iupac.qmul.ac.uk/)
 
 ## Biophysics 101: Understanding Energy Minimization
 

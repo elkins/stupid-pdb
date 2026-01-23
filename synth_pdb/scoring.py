@@ -15,6 +15,20 @@ def calculate_clash_score(atom_array: struc.AtomArray) -> float:
         
     Returns:
         float: Systematic score representing the severity of steric clashes
+    
+    # EDUCATIONAL NOTE - Steric Repulsion and Forces
+    # Atoms are not hard billiard balls, but they do have a "Van der Waals radius".
+    # When two atoms get too close, their electron clouds repel each other.
+    #
+    # The standard "Lennard-Jones Potential" models this energy as:
+    # E = 4ε [ (σ/r)^12 - (σ/r)^6 ]
+    #
+    # - (σ/r)^12 term: Repulsion. Rises steeply as atoms overlap (Pauli exclusion).
+    # - (σ/r)^6 term: Attraction. Weak "dispersion" forces that hold non-bonded atoms together.
+    #
+    # In this function, we use a simplified "Soft Sphere" or "Cubic Penalty" approach.
+    # Instead of shooting to infinity (which breaks optimization math), we assume
+    # the energy rises polynomially once distance < sum_of_radii.
     """
     if atom_array.array_length() < 2:
         return 0.0

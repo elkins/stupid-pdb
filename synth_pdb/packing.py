@@ -14,6 +14,22 @@ class SideChainPacker:
     """
     Optimizes amino acid side-chain conformations to minimize steric clashes.
     Uses a Monte Carlo approach with the specialized rotamer library.
+
+    # EDUCATIONAL NOTE - Monte Carlo Optimization
+    # How do we find the best shape for a protein?
+    #
+    # We could try every combination, but that's impossible (Combinatorial Explosion).
+    # Instead, we use "Monte Carlo" simulation:
+    # 1. Make a random change (like rotating a side chain).
+    # 2. Measure the energy (Clash Score).
+    # 3. If energy is lower (better), ACCEPT the move.
+    # 4. If energy is higher (worse), we might still accept it based on probability.
+    #
+    # Why accept a worse state? To escape "Local Minima".
+    # Imagine being stuck in a small pothole while trying to reach the bottom of the Grand Canyon.
+    # You need to climb UP out of the pothole to go down further.
+    #
+    # This probability is given by the Boltzmann factor: P = exp(-DeltaE / Temperature)
     """
     
     def __init__(self, steps: int = 500, temperature: float = 0.5):

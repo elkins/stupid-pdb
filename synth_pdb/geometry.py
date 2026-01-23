@@ -17,6 +17,17 @@ def position_atom_3d_from_internal_coords(
     """
     Calculates the 3D coordinates of a new atom (P4) given the coordinates of three
     preceding atoms (P1, P2, P3) and the internal coordinates.
+
+    # EDUCATIONAL NOTE - Z-Matrix Construction
+    # Proteins are defined by their "Internal Coordinates" (Z-Matrix):
+    # 1. Bond Length (distance between two atoms)
+    # 2. Bond Angle (angle between three atoms)
+    # 3. Torsion/Dihedral Angle (twist between four atoms)
+    #
+    # To draw this in 3D space (Cartesian X,Y,Z), we use the "NeRF" method 
+    # (Natural Extension Reference Frame).
+    # We essentially walk down the chain, placing the next atom relative to the 
+    # local coordinate system defined by the previous three atoms.
     """
     bond_angle_rad = np.deg2rad(bond_angle_deg)
     dihedral_angle_rad = np.deg2rad(dihedral_angle_deg)

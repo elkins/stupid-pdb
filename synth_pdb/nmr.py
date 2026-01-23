@@ -24,6 +24,20 @@ def calculate_synthetic_noes(
     
     Finds all proton pairs (H-H) within the specified cutoff distance.
     Generates an upper bound restraint for each pair.
+
+    # EDUCATIONAL NOTE - The Physics of NOEs
+    # The Nuclear Overhauser Effect (NOE) allows us to measure distances between
+    # protons in a molecule. The intensity of the NOE signal is proportional to 
+    # the inverse 6th power of the distance (I ~ 1/r^6).
+    #
+    # This steep dependence means:
+    # 1. Close protons give VERY strong signals.
+    # 2. As distance increases, signal vanishes rapidly.
+    # 3. The practical limit for detection is usually 5.0 - 6.0 Angstroms.
+    #
+    # In structure calculation, we treat these not as exact rulers, but as 
+    # "Upper Distance Bounds". If we see an NOE, the atoms MUST be close.
+    # If we don't see one, they might be far, or there might be motion/noise.
     
     Args:
         structure: The AtomArray containing the protein (must have Hydrogens).
