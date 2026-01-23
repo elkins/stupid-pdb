@@ -64,11 +64,11 @@ dev = [
 synth-pdb = "synth_pdb.main:main"
 
 [project.urls]
-Homepage = "https://github.com/georgeelkins/synth-pdb"
-Repository = "https://github.com/georgeelkins/synth-pdb"
-"Bug Tracker" = "https://github.com/georgeelkins/synth-pdb/issues"
-Documentation = "https://github.com/georgeelkins/synth-pdb#readme"
-Changelog = "https://github.com/georgeelkins/synth-pdb/releases"
+Homepage = "https://github.com/elkins/synth-pdb"
+Repository = "https://github.com/elkins/synth-pdb"
+"Bug Tracker" = "https://github.com/elkins/synth-pdb/issues"
+Documentation = "https://github.com/elkins/synth-pdb#readme"
+Changelog = "https://github.com/elkins/synth-pdb/releases"
 
 [tool.setuptools.packages.find]
 where = ["."]

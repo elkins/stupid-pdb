@@ -47,7 +47,7 @@ If you use this software in your research, please cite:
   author = {Elkins, George},
   title = {synth-pdb: Realistic Protein Structure Generator},
   year = {2026},
-  url = {https://github.com/georgeelkins/synth-pdb}
+  url = {https://github.com/elkins/synth-pdb}
 }
 ```
 

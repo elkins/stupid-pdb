@@ -5,8 +5,8 @@ type: software
 authors:
   - family-names: "Elkins"
     given-names: "George"
-repository-code: "https://github.com/georgeelkins/synth-pdb"
-url: "https://github.com/georgeelkins/synth-pdb"
+repository-code: "https://github.com/elkins/synth-pdb"
+url: "https://github.com/elkins/synth-pdb"
 abstract: "A command-line tool for generating realistic PDB files with mixed secondary structures, biologically-inspired conformations, and comprehensive validation. Supports per-region conformation control, Ramachandran-based sampling, chirality validation, and quality control features."
 keywords:
   - protein structure
