@@ -746,6 +746,7 @@ def generate_pdb_content(
     
     # Build backbone and add side chains
     for i, res_name in enumerate(sequence):
+        # print(f"DEBUG: Processing residue {i+1} {res_name}")
         res_id = i + 1
         
         # Determine backbone coordinates based on previous residue or initial placement
@@ -799,6 +800,7 @@ def generate_pdb_content(
                 current_phi = RAMACHANDRAN_PRESETS[current_conformation]['phi'] + np.random.normal(0, 5)
                 current_psi = RAMACHANDRAN_PRESETS[current_conformation]['psi'] + np.random.normal(0, 5)
 
+
             # Add slight variation to omega angle to mimic thermal fluctuations
             # This adds realistic structural diversity (±5° variation)
             # Use a deterministic seed for the first residue to ensure test reproducibility
@@ -847,32 +849,48 @@ def generate_pdb_content(
             ref_res_template = ref_res_template[ref_res_template.atom_name != "OXT"]
 
         if res_name in ROTAMER_LIBRARY:
-            rotamer_data = ROTAMER_LIBRARY[res_name]
+            rotamers = ROTAMER_LIBRARY[res_name]
             
-            # Skip if this amino acid has no chi angles (e.g., ALA, GLY, PRO)
-            if not rotamer_data or 'chi1' not in rotamer_data:
-                pass  # No rotamer to apply
+            # Skip if this amino acid has no rotamers (e.g., ALA, GLY)
+            if not rotamers:
+                pass
             else:
-                chi1_target = rotamer_data["chi1"][0]
+                # Weighted random selection based on experimental probabilities
+                weights = [r.get('prob', 0.0) for r in rotamers]
+                selected_rotamer = random.choices(rotamers, weights=weights, k=1)[0]
                 
-                # Check if this residue has the required atoms for rotamer application
-                # Not all amino acids have CG (e.g., VAL has CG1/CG2, not CG)
-                has_cg = len(ref_res_template[ref_res_template.atom_name == "CG"]) > 0
-                
-                if has_cg:
-                    n_template = ref_res_template[ref_res_template.atom_name == "N"][0]
-                    ca_template = ref_res_template[ref_res_template.atom_name == "CA"][0]
-                    cb_template = ref_res_template[ref_res_template.atom_name == "CB"][0]
-                    cg_template = ref_res_template[ref_res_template.atom_name == "CG"][0]
+                # Apply chi angles
+                if 'chi1' in selected_rotamer:
+                    chi1_target = selected_rotamer["chi1"][0]
                     
-                    bond_length_cb_cg = np.linalg.norm(cg_template.coord - cb_template.coord)
-                    angle_ca_cb_cg = calculate_angle(ca_template.coord, cb_template.coord, cg_template.coord)
+                    # Logic to find the gamma atom (CG, CG1, OG, OG1, SG) for Chi1 definition (N-CA-CB-Gamma)
+                    # Priority: CG > CG1 > OG > OG1 > SG
+                    gamma_atom_name = None
+                    for candidate in ["CG", "CG1", "OG", "OG1", "SG"]:
+                        if len(ref_res_template[ref_res_template.atom_name == candidate]) > 0:
+                            gamma_atom_name = candidate
+                            break
+                    
+                    if gamma_atom_name:
+                        n_template = ref_res_template[ref_res_template.atom_name == "N"][0]
+                        ca_template = ref_res_template[ref_res_template.atom_name == "CA"][0]
+                        cb_template = ref_res_template[ref_res_template.atom_name == "CB"][0]
+                        gamma_template = ref_res_template[ref_res_template.atom_name == gamma_atom_name][0]
+                        
+                        bond_length_cb_gamma = np.linalg.norm(gamma_template.coord - cb_template.coord)
+                        angle_ca_cb_gamma = calculate_angle(ca_template.coord, cb_template.coord, gamma_template.coord)
 
-                    cg_coord = position_atom_3d_from_internal_coords(
-                        n_template.coord, ca_template.coord, cb_template.coord,
-                        bond_length_cb_cg, angle_ca_cb_cg, chi1_target
-                    )
-                    ref_res_template.coord[ref_res_template.atom_name == "CG"][0] = cg_coord
+                        # EDUCATIONAL NOTE - NeRF Phase Shift:
+                        # The standard NeRF construction defines 0 degrees as trans (180 offset from cis).
+                        # The IUPAC definition for Chi angles (and Dunbrack library) defines 0 degrees as cis.
+                        # Therefore, we must add 180 degrees to correct the phase shift.
+                        new_gamma_coord = position_atom_3d_from_internal_coords(
+                            n_template.coord, ca_template.coord, cb_template.coord,
+                            bond_length_cb_gamma, angle_ca_cb_gamma, chi1_target + 180.0
+                        )
+                        # Fix: use direct index assignment to modify array in-place
+                        gamma_idx = np.where(ref_res_template.atom_name == gamma_atom_name)[0][0]
+                        ref_res_template.coord[gamma_idx] = new_gamma_coord
             
         # Extract N, CA, C from ref_res_template
         # Ensure these atoms are present in the template. Some templates might not have N or C (e.g., non-standard)
