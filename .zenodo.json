@@ -1,0 +1,25 @@
+{
+    "title": "synth-pdb: Realistic Protein Structure Generator",
+    "description": "A command-line tool for generating realistic PDB files with mixed secondary structures, biologically-inspired conformations, and comprehensive validation. Supports per-region conformation control, Ramachandran-based sampling, chirality validation, and quality control features.",
+    "creators": [
+        {
+            "name": "Elkins, George",
+            "affiliation": "Independent Researcher"
+        }
+    ],
+    "access_right": "open",
+    "license": "MIT",
+    "keywords": [
+        "protein structure",
+        "PDB files",
+        "bioinformatics",
+        "structural biology",
+        "peptide generation",
+        "molecular modeling",
+        "Ramachandran plot",
+        "secondary structure",
+        "educational tool",
+        "testing framework"
+    ],
+    "upload_type": "software"
+}
