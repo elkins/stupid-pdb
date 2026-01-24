@@ -142,6 +142,18 @@ Generate the best of 10 attempts with clash refinement:
 synth-pdb --length 20 --best-of-N 10 --refine-clashes 5 --output refined_peptide.pdb
 ```
 
+### 4. Relax (Simulate Dynamics)
+Generate relaxation rates ($R_1, R_2, NOE$) with **realistic internal dynamics**:
+```bash
+python main.py relax --input output/my_peptide.pdb --output output/relaxation_data.nef --field 600 --tm 10.0
+```
+This module now implements the **Lipari-Szabo Model-Free** formalism with structure-based Order Parameter ($S^2$) prediction:
+*   **Helices/Sheets**: $S^2 \approx 0.85$ (Rigid, high $R_1/R_2$)
+*   **Loops/Turns**: $S^2 \approx 0.65$ (Flexible, lower $R_1/R_2$)
+*   **Termini**: $S^2 \approx 0.45$ (Highly disordered)
+
+This creates realistic "relaxation gradients" along the sequence, perfect for testing dynamics software.
+
 ## 🚀 Quick Visual Demo
 
 Want to see the **Physics + Visualization** capabilities in action?
@@ -714,6 +726,10 @@ For students and researchers interested in the physics behind the code, here are
 *   **Chemical Shift Prediction (SPARTA) & Referencing (DSS):**
     *   Shen, Y., & Bax, A. (2010). SPARTA+: a modest improvement in empirical NMR chemical shift prediction... *J Biomol NMR*, 48, 13-22.
     *   Markley, J. L., et al. (1998). Recommendations for the presentation of NMR structures... (IUPAC). *Pure Appl Chem*, 70(1), 117-142. (Defined DSS as the standard).
+
+*   **Internal Dynamics & Model-Free Formalism:**
+    *   Lipari, G., & Szabo, A. (1982). Model-free approach to the interpretation of nuclear magnetic resonance relaxation in macromolecules. 1. Theory and range of validity. *J. Am. Chem. Soc.*, 104(17), 4546–4559. (The foundational theory).
+    *   Kay, L. E., Torchia, D. A., & Bax, A. (1989). Backbone dynamics of proteins as studied by 15N inverse detected heteronuclear NMR spectroscopy... *Biochemistry*, 28(23), 8972-8979. (The seminal application to proteins).
 
 ## License
 

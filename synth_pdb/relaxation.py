@@ -51,10 +51,68 @@ def spectral_density(omega: float, tau_m: float, s2: float, tau_f: float = 0.0) 
         
     return 0.4 * (j_global + j_fast) 
 
+from synth_pdb.structure_utils import get_secondary_structure
+
+def predict_order_parameters(structure: struc.AtomArray) -> Dict[int, float]:
+    """
+    Predict Generalized Order Parameters (S2) based on secondary structure.
+    
+    EDUCATIONAL NOTE - Lipari-Szabo Model Free:
+    ===========================================
+    The Order Parameter (S2) describes the amplitude of internal motion:
+    - S2 = 1.0: Completely rigid (no internal motion relative to tumbling).
+    - S2 = 0.0: Completely disordered (isotropic internal motion).
+    
+    Typical values in proteins:
+    - Alpha Helices / Beta Sheets: S2 ~ 0.85 (Very rigid H-bond network)
+    - Loops / Turns: S2 ~ 0.60 - 0.70 (Flexible)
+    - Termini (N/C): S2 ~ 0.40 - 0.50 (Fraying)
+    """
+    ss_list = get_secondary_structure(structure)
+    res_starts = struc.get_residue_starts(structure)
+    
+    s2_map = {}
+    
+    # Identify termini residues (by ID)
+    # Be careful with multi-chain
+    res_ids = np.unique(structure.res_id)
+    if len(res_ids) == 0:
+        return {}
+        
+    start_res = res_ids[0]
+    end_res = res_ids[-1]
+    
+    for i, start_idx in enumerate(res_starts):
+        # Identify residue ID
+        # structure[start_idx] gives first atom of residue
+        rid = structure.res_id[start_idx]
+        
+        ss = ss_list[i] if i < len(ss_list) else "coil"
+        
+        # Base S2
+        if ss in ["alpha", "beta"]:
+            s2 = 0.85
+        else:
+            s2 = 0.65 # Coil/Loop
+            
+        # Termini effects override secondary structure
+        # Fraying usually affects first/last 2-3 residues
+        if rid <= start_res + 1 or rid >= end_res - 1:
+            s2 = 0.45
+            
+        # Add realistic noise
+        s2 += np.random.normal(0, 0.02)
+        s2 = np.clip(s2, 0.01, 0.98)
+        
+        s2_map[rid] = s2
+        
+    return s2_map
+
 def calculate_relaxation_rates(
     structure: struc.AtomArray,
     field_mhz: float = 600.0,
-    tau_m_ns: float = 10.0
+    tau_m_ns: float = 10.0,
+    s2_map: Dict[int, float] = None
 ) -> Dict[int, Dict[str, float]]:
     """
     Calculate R1, R2, and Heteronuclear NOE for all backbone Amides (N-H).
@@ -63,6 +121,7 @@ def calculate_relaxation_rates(
         structure: The protein structure (must have hydrogens).
         field_mhz: Proton Larmor frequency in MHz (e.g. 600).
         tau_m_ns: Global tumbling time in ns (default 10.0).
+        s2_map: Optional dictionary of {res_id: S2}. If None, predicted from structure.
         
     Returns:
         Dictionary keyed by residue ID:
@@ -70,13 +129,14 @@ def calculate_relaxation_rates(
     """
     logger.info(f"Calculating Relaxation Rates (Field={field_mhz}MHz, tm={tau_m_ns}ns)...")
     
+    # Calculate S2 profile if not provided
+    if s2_map is None:
+        s2_map = predict_order_parameters(structure)
+    
     # Convert inputs to SI units
     tau_m = tau_m_ns * 1e-9
     
     # Larmor Frequencies (rad/s)
-    # Field Strength B0 (Tesla) -> omega = gamma * B0
-    # But user gives MHz. 600 MHz = frequency of Proton.
-    # omega_H = 2 * pi * 600e6
     omega_h = 2 * np.pi * field_mhz * 1e6
     
     # Calculate B0 from proton freq
@@ -87,48 +147,48 @@ def calculate_relaxation_rates(
     logger.debug(f"B0 Field: {b0:.2f} T")
     logger.debug(f"wH: {omega_h:.2e} rad/s, wN: {omega_n:.2e} rad/s")
     
-    # Dipolar Pre-factor
-    # d = (mu0 * hbar * gammaH * gammaN) / (4pi * r^3) ??
-    # Look up standard definition for "d" in R1 equations.
-    # Usually: d = (mu0 / 4pi) * (hbar * gammaH * gammaN) * r^-3
+    logger.debug(f"wH: {omega_h:.2e} rad/s, wN: {omega_n:.2e} rad/s")
+    
+    # EDUCATIONAL NOTE - Dipolar Integration Constant (d):
+    # ====================================================
+    # The dominant relaxation mechanism for 15N is the Dipole-Dipole interaction
+    # with the directly attached Amide Proton (H).
+    # d = (μ0 * ħ * γH * γN) / (4π * r^3)
+    #
+    # Where:
+    # - μ0: Vacuum permeability
+    # - r: N-H bond length (approx 1.02 Å)
+    # - γH, γN: Gyromagnetic ratios
+    # 
+    # This constant represents the strength of the magnetic interaction distance dependence (r^-3).
+    # In relaxation rate equations (R1, R2), it appears squared (d^2), leading to the famous r^-6 dependence.
     
     dd_const = (MU_0 / (4 * np.pi)) * H_BAR * GAMMA_H * GAMMA_N * (R_NH**-3)
     d_sq = dd_const**2
     
-    # CSA Pre-factor
-    # c = (DeltaSigma * wN) / sqrt(3) -> definition varies by factor of 3 depending on which R1 eq used.
-    # Standard: c = omega_N * CSA_N / sqrt(3)
-    # OR: factor = (c**2) in equations.
-    # Let's use:
+    # EDUCATIONAL NOTE - Chemical Shift Anisotropy (CSA) Constant (c):
+    # ================================================================
+    # The second major relaxation mechanism is CSA. The electron cloud around the 15N nucleus
+    # is not spherical, so as the protein tumbles, the local magnetic field fluctuates.
+    # c = (Δσ * ωN) / √3
+    #
+    # Where:
+    # - Δσ (CSA_N): The anisotropy parameter (-160 ppm typical for Beta Sheet / Helix average).
+    # - ωN: The Larmor frequency of Nitrogen (field dependent!).
+    #
+    # Note: Because 'c' depends on ωN (and thus B0), CSA relaxation increases quadratically
+    # with magnetic field strength. At high fields (>800 MHz), CSA becomes dominant over Dipolar.
+    
     csa_const = (CSA_N * omega_n) / np.sqrt(3)
     c_sq = csa_const**2
-    
-    # Analyze Secondary Structure for Order Parameters (S2)
-    # We'll use Phi/Psi to guess if rigid or flexible
-    try:
-        phi, psi, omega_dihed = struc.dihedral_backbone(structure)
-        # dihedrals returns angles for residues starting from 2nd?
-        # Actually returns array matching residue length, with NaNs at ends.
-    except Exception:
-        logger.warning("Could not calculate dihedrals. Assuming all rigid.")
-        phi = np.zeros(structure.res_id[-1] + 1)
-        
-    # Map S2 by residue
-    # Default S2 = 0.85 (Ordered)
-    # Termini or Loops = 0.60
-    
-    # Identify residues
-    res_ids = np.unique(structure.res_id)
-    min_res, max_res = res_ids[0], res_ids[-1]
     
     results = {}
     
     # Iterate over residues that have an N-H pair
-    # (Proline has no H, N-terminus implies H1/H2/H3 so no amide H usually defined same way)
+    res_ids = np.unique(structure.res_id)
     
     for rid in res_ids:
         # Check if N and H exist
-        # Need "N" and "H" atoms
         res_mask = structure.res_id == rid
         res_atoms = structure[res_mask]
         
@@ -142,22 +202,8 @@ def calculate_relaxation_rates(
         if res_name == "PRO":
             continue
             
-        # Determine S2
-        s2 = 0.85 # Default Rigid
-        
-        # Termini are flexible
-        if rid == min_res or rid == max_res:
-            s2 = 0.50
-        elif rid == min_res + 1 or rid == max_res - 1:
-            s2 = 0.70
-            
-        # If we had simple DSSP logic:
-        # For synthetic ones, we built them.
-        # Let's rely on basic heuristic: N/C term flexible.
-        # Maybe random variation?
-        # Add random noise to make it realistic
-        s2 += np.random.normal(0, 0.02)
-        s2 = np.clip(s2, 0.01, 1.0)
+        # Get S2
+        s2 = s2_map.get(rid, 0.85) # Fallback to 0.85 if missing from map
         
         # Frequencies for J(w)
         # R1 depends on: J(wH-wN), J(wN), J(wH+wN)

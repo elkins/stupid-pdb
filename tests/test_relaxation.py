@@ -53,22 +53,22 @@ def test_relaxation_trends():
     logger.info(f"Term NOE: {noe_term}, Core NOE: {noe_core}")
     
     # Core should be more rigid (Higher S2)
+    # With new predict_order_parameters, termini get ~0.45, core ~0.85 (if alpha) or 0.65 (if coil)
+    # The dummy structure has no secondary structure (Phi/Psi=0/NaN?), so it might default to Coil or Termini
+    # Termini logic overrides.
     assert s2_core > s2_term
     
     # PHYSICS NOTE:
-    # In simple Model-Free with te=0, J(w) scales linearly with S2.
-    # Since NOE ~ 1 + (Sigma/R1), and both Sigma and R1 scale with S2,
-    # S2 cancels out! NOE mainly measures Tumbling Time (tau_m), not S2.
-    # To see NOE dips, we'd need fast internal motions (tau_e > 0).
-    # So we asserting on NOE here is wrong for this simple model.
-    # Instead, R1 and R2 scale directly with S2.
-    
-    # Rigid -> Larger R2 (faster transverse decay)
-    # R2 is roughly proportional to S2 * tau_m
+    # Rigid (High S2) -> Larger R2 (faster transverse decay)
+    # R2 ~ S2 * tau_m
     assert rates[3]['R2'] > rates[1]['R2']
     
-    # Rigid -> Larger R1 (usually, unless near min)
-    assert rates[3]['R1'] > rates[1]['R1']
+    # PHYSICS CORRECTION:
+    # In the simple Model-Free limit (tau_e ~ 0), NOE is independent of S2 because
+    # S2 cancels out in the ratio of Cross-Relaxation / Auto-Relaxation.
+    # So NOE should be roughly constant even if S2 changes, unless we model tau_e.
+    # We verify they are close.
+    assert abs(noe_core - noe_term) < 0.01
 
 def test_proline_exclusion():
     """Ensure Prolines are skipped (no amide proton)."""

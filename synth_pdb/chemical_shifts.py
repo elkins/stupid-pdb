@@ -78,6 +78,8 @@ SECONDARY_SHIFTS: Dict[str, Dict[str, float]] = {
     "H":  {"alpha": -0.2, "beta": 0.3},
 }
 
+from synth_pdb.structure_utils import get_secondary_structure
+
 def predict_chemical_shifts(structure: struc.AtomArray) -> Dict[str, Dict[str, Dict[str, float]]]:
     """
     Predict chemical shifts based on secondary structure (Phi/Psi).
@@ -106,12 +108,8 @@ def predict_chemical_shifts(structure: struc.AtomArray) -> Dict[str, Dict[str, D
     """
     logger.info("Predicting Chemical Shifts (SPARTA-lite)...")
     
-    # Calculate dihedrals
-    phi, psi, omega = struc.dihedral_backbone(structure)
-    # phi/psi arrays match residue count.
-    
-    # Helper to clean invalid angles (NaN at termini)
-    # We will assume 'coil' (offset 0) for termini where angle is NaN
+    # Use shared utility for SS classification
+    ss_list = get_secondary_structure(structure)
     
     # We need to iterate over residues
     res_starts = struc.get_residue_starts(structure)
@@ -128,25 +126,8 @@ def predict_chemical_shifts(structure: struc.AtomArray) -> Dict[str, Dict[str, D
         if res_name not in RANDOM_COIL_SHIFTS:
             continue
             
-        # Get Angles (degrees)
-        p = np.rad2deg(phi[i])
-        s = np.rad2deg(psi[i])
-        
-        # Determine Secondary Structure State
-        # Simple regions:
-        # Alpha: Phi ~ -60 (+/- 30), Psi ~ -45 (+/- 40)
-        # Beta:  Phi ~ -120 (+/- 40), Psi ~ 120 (+/- 50)
-        ss_state = "coil"
-        
-        if not np.isnan(p) and not np.isnan(s):
-            if (-90 < p < -30) and (-90 < s < -10):
-                ss_state = "alpha"
-            elif (-160 < p < -80) and (80 < s < 170):
-                ss_state = "beta"
-            # Else coil
-            logger.debug(f"DEBUG: Res {i} {res_name}: Phi={p:.1f}, Psi={s:.1f} -> {ss_state}")
-        else:
-             logger.debug(f"DEBUG: Res {i} {res_name}: Phi={p:.1f}, Psi={s:.1f} -> NaN/Coil")
+        ss_state = ss_list[i] if i < len(ss_list) else "coil"
+        logger.debug(f"DEBUG: Res {i} {res_name} -> {ss_state}")
         
         # Calculate Shifts
         rc = RANDOM_COIL_SHIFTS[res_name]
