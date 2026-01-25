@@ -1,9 +1,15 @@
 import logging
-import openmm.app as app
-import openmm as mm
-from openmm import unit
-import sys
-import os
+try:
+    import openmm.app as app
+    import openmm as mm
+    from openmm import unit
+    HAS_OPENMM = True
+except ImportError:
+    HAS_OPENMM = False
+    app = None
+    mm = None
+    unit = None
+    # We don't log error here to allow module import, but we'll check HAS_OPENMM later
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +35,7 @@ class EnergyMinimizer:
     This module performs that final "geometry regularization" step.
     """
     
-    def __init__(self, forcefield_name='amber14-all.xml', solvent_model=app.OBC2):
+    def __init__(self, forcefield_name='amber14-all.xml', solvent_model=None):
         """
         Initialize the Minimizer with a Forcefield and Solvent Model.
         
@@ -48,6 +54,13 @@ class EnergyMinimizer:
                              aims to approximate that solution environment, distinct from the
                              vacuum or crystal lattice assumptions of other methods.
         """
+        if not HAS_OPENMM:
+            raise ImportError("OpenMM is not installed. Please install it (e.g. 'conda install -c conda-forge openmm') to use EnergyMinimizer.")
+
+        # Set default solvent model if not provided
+        if solvent_model is None:
+            solvent_model = app.OBC2
+            
         self.forcefield_name = forcefield_name
         self.water_model = 'amber14/tip3pfb.xml' 
         self.solvent_model = solvent_model
