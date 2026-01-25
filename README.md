@@ -1,6 +1,6 @@
 # synth-pdb
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elkins/synth-pdb/blob/main/demo.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/elkins/synth-pdb/blob/main/interactive_relaxation.ipynb)
 
 [![PyPI version](https://badge.fury.io/py/synth-pdb.svg)](https://badge.fury.io/py/synth-pdb)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
@@ -567,7 +567,7 @@ synth-pdb --sequence "LKELEKELEKELEKELEKELEKEL" \
 
 > **👀 Viewer Tip**: Since you used `--gen-nef`, the **synthetic NOE restraints** will automatically appear as **red cylinders** connecting the protons. Use the **"🔴 Restraints"** button in the viewer to toggle them on/off!
 
-![Ghost Mode with Restraints](docs/images/viewer_restraints.png)
+![Ghost Mode with Restraints](https://raw.githubusercontent.com/elkins/synth-pdb/main/docs/images/viewer_restraints.png)
 
 #### 🌿 Amphipathic Helix Visualization
 A classic biophysical motif where one face of the helix is hydrophobic (L, V, I) and the other is hydrophilic (K, E, R).

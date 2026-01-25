@@ -74,3 +74,34 @@ class TestDocumentationIntegrity(unittest.TestCase):
             "Left-Handed Alpha Region",
         ]
         self._check_file_contains(self.ramachandran_test_path, required_notes)
+
+    def test_viewer_educational_notes(self):
+        """Ensure viewer.py retains key educational blocks and examples."""
+        viewer_path = os.path.join(self.base_dir, 'synth_pdb', 'viewer.py')
+        required_notes = [
+            "EDUCATIONAL NOTE - Why Browser-Based Visualization:",
+            "EDUCATIONAL NOTE - 3Dmol.js:",
+            "NMR Short-Range Restraints (NOEs) roughly depend on 1/r^6",
+            # Ensure developer example survives
+            ">>> pdb = generate_pdb_content",
+            ">>> view_structure_in_browser",
+            # Ensure commenting convention survives
+            "// Highlight active buttons",
+            "// Remove all active classes"
+        ]
+        self._check_file_contains(viewer_path, required_notes)
+
+    def test_readme_educational_notes(self):
+        """Ensure README.md retains key academic notes."""
+        readme_path = os.path.join(self.base_dir, 'README.md')
+        required_notes = [
+            # Ensure the Amphipathic note survives
+            "Academic Note - \"Amphipathic\"",
+            "**Hydrophobic Face** (L, V, I, F): Hates water",
+            "**Hydrophilic Face** (K, R, E, D): Loves water",
+            # Ensure the B-factor example survives
+            "Atomic Records & B-Factors",
+            "**B-Factor (56.71 vs 86.14)**: Reflects atomic mobility",
+            "Note how the side-chain atom (CB) has a higher B-factor"
+        ]
+        self._check_file_contains(readme_path, required_notes)
