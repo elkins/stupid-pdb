@@ -9,7 +9,8 @@ except ImportError:
     app = None
     mm = None
     unit = None
-    # We don't log error here to allow module import, but we'll check HAS_OPENMM later
+import sys
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -55,16 +56,21 @@ class EnergyMinimizer:
                              vacuum or crystal lattice assumptions of other methods.
         """
         if not HAS_OPENMM:
-            raise ImportError("OpenMM is not installed. Please install it (e.g. 'conda install -c conda-forge openmm') to use EnergyMinimizer.")
+             # We allow initialization to pass so the module can be imported
+             # but methods will check HAS_OPENMM
+             pass
 
-        # Set default solvent model if not provided
-        if solvent_model is None:
+        # Set default solvent model
+        if solvent_model is None and HAS_OPENMM:
             solvent_model = app.OBC2
-            
+
         self.forcefield_name = forcefield_name
         self.water_model = 'amber14/tip3pfb.xml' 
         self.solvent_model = solvent_model
         
+        if not HAS_OPENMM:
+            return
+
         # Map solvent models to their parameter files in OpenMM
         # These need to be loaded alongside the main forcefield
         # Standard OpenMM paths often have 'implicit/' at the root
@@ -99,9 +105,12 @@ class EnergyMinimizer:
             max_iterations: Limit steps (0 = until convergence).
             tolerance: Target energy convergence threshold (kJ/mol).
         """
+        if not HAS_OPENMM:
+             logger.error("Cannot minimize: OpenMM not found.")
+             return False
+
         # This method assumes the input PDB is perfect (has Hydrogens, correct names).
         # See 'add_hydrogens_and_minimize' for the robust version used by synth-pdb.
-        pass # (Implementation same as previous, omitted from brief view for clarity, effectively aliases logic below)
         return self._run_simulation(pdb_file_path, output_path, max_iterations, tolerance, add_hydrogens=False)
 
     def add_hydrogens_and_minimize(self, pdb_file_path: str, output_path: str) -> bool:
@@ -119,6 +128,10 @@ class EnergyMinimizer:
         predicting NOEs (Nuclear Overhauser Effects) which depend on H-H distances.
         We use `app.Modeller` to "guess" the standard positions of hydrogens at specific pH (7.0).
         """
+        if not HAS_OPENMM:
+             logger.error("Cannot add hydrogens: OpenMM not found.")
+             return False
+             
         return self._run_simulation(pdb_file_path, output_path, add_hydrogens=True)
 
     def _run_simulation(self, input_path, output_path, max_iterations=0, tolerance=10.0, add_hydrogens=True):
