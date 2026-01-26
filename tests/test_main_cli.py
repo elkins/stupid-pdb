@@ -651,3 +651,35 @@ class TestMainCLI:
         assert "Calculating NOE Restraints" in caplog.text or "Calculate NOE Restraints" in caplog.text
         assert "Constraints exported to" in caplog.text
 
+    def test_run_export_torsion(self, mocker, tmp_path, caplog):
+        """Test generation of Torsion Angles."""
+        caplog.set_level(logging.INFO)
+        output_file = tmp_path / "torsion_test.pdb"
+        
+        # Valid PDB (Alpha helix approx to get results)
+        valid_pdb = (
+            "HEADER    test\n" +
+            create_atom_line(1, "N",  "ALA", "A", 1, -1.458, 0, 0, "N") + "\n" +
+            create_atom_line(2, "CA", "ALA", "A", 1, 0, 0, 0, "C") + "\n" +
+            create_atom_line(3, "C",  "ALA", "A", 1, 1.525, 0, 0, "C") + "\n" + 
+            create_atom_line(4, "H",  "ALA", "A", 1, -1.5, 1, 0, "H") # Just enough to parse
+        )
+        mocker.patch("synth_pdb.main.generate_pdb_content", return_value=valid_pdb)
+        
+        # Mock calculation and export
+        mocker.patch("synth_pdb.torsion.calculate_torsion_angles", return_value=[{"phi":-60}])
+        mocker.patch("synth_pdb.torsion.export_torsion_angles")
+        
+        test_args = [
+            "synth_pdb", 
+            "--length", "1", 
+            "--output", str(output_file),
+            "--export-torsion", str(tmp_path / "angles.csv")
+        ]
+        mocker.patch("sys.argv", test_args)
+        mocker.patch("sys.exit")
+        
+        main.main()
+        
+        assert "Torsion angles exported to" in caplog.text
+

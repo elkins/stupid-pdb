@@ -317,6 +317,16 @@ This effectively demonstrates:
 - `--constraint-cutoff <DIST>`: Distance cutoff for defining binary contacts (Angstroms).
   - Default: `8.0`
 
+#### **Torsion Angle Export **
+
+- `--export-torsion <FILE>`: Export backbone torsion angles (Phi, Psi, Omega) for every residue.
+  - Useful for training ML models on backbone geometry.
+  - Outputs a CSV or JSON file.
+  - Example: `--export-torsion angles.csv`
+
+- `--torsion-format {csv,json}`: Format for the exported data.
+  - Default: `csv`
+
 
 #### **Output Options**
 

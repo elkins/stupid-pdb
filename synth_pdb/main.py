@@ -286,6 +286,20 @@ def main() -> None:
         help="Distance cutoff (Angstroms) for binary contacts (default: 8.0).",
     )
 
+    # Phase 11: Torsion Export
+    parser.add_argument(
+        "--export-torsion",
+        type=str,
+        help="Export backbone torsion angles (Phi, Psi, Omega) to a file. Specify output filename.",
+    )
+    parser.add_argument(
+        "--torsion-format",
+        type=str,
+        choices=["csv", "json"],
+        default="csv",
+        help="Format for torsion angle export (default: csv).",
+    )
+
     parser.add_argument(
         "--seed",
         type=int,
@@ -646,7 +660,7 @@ def main() -> None:
                 # We perform calculations first, so we can capture data (like restraints) for visualization if needed.
                 generated_restraints = None # To hold restraints for viewer
                 
-                if args.gen_nef or args.gen_relax or args.gen_shifts or args.export_constraints:
+                if args.gen_nef or args.gen_relax or args.gen_shifts or args.export_constraints or args.export_torsion:
                     if args.mode != "generate":
                         logger.warning("Synthetic Data Generation is currently only supported in single structure 'generate' mode.")
                     else:
@@ -657,6 +671,7 @@ def main() -> None:
                         # NEW IMPORTS for Export
                         from .contact import compute_contact_map
                         from .export import export_constraints
+                        from .torsion import calculate_torsion_angles, export_torsion_angles
                         
                         import biotite.structure.io.pdb as pdb_io
                         import io
@@ -731,6 +746,12 @@ def main() -> None:
                                 with open(export_file, "w") as f:
                                     f.write(content)
                                 logger.info(f"Constraints exported to: {os.path.abspath(export_file)}")
+
+                            # 5. Torsion Export (Phase 11)
+                            if args.export_torsion:
+                                angles = calculate_torsion_angles(structure)
+                                export_torsion_angles(angles, args.export_torsion, fmt=args.torsion_format)
+                                logger.info(f"Torsion angles exported to: {os.path.abspath(args.export_torsion)}")
 
                 # Open 3D viewer if requested (MOVED AFTER NMR calc to access generated_restraints)
                 if args.visualize:
