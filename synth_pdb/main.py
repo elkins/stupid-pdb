@@ -300,6 +300,25 @@ def main() -> None:
         help="Format for torsion angle export (default: csv).",
     )
 
+    # Phase 12: Synthetic MSA (Evolution)
+    parser.add_argument(
+        "--gen-msa",
+        action="store_true",
+        help="Generate synthetic Multiple Sequence Alignment (MSA) via simulated evolution.",
+    )
+    parser.add_argument(
+        "--msa-depth",
+        type=int,
+        default=100,
+        help="Number of sequences to generate for MSA (default: 100).",
+    )
+    parser.add_argument(
+        "--mutation-rate",
+        type=float,
+        default=0.1,
+        help="Mutation rate per position per sequence (default: 0.1).",
+    )
+    
     parser.add_argument(
         "--seed",
         type=int,
@@ -660,7 +679,7 @@ def main() -> None:
                 # We perform calculations first, so we can capture data (like restraints) for visualization if needed.
                 generated_restraints = None # To hold restraints for viewer
                 
-                if args.gen_nef or args.gen_relax or args.gen_shifts or args.export_constraints or args.export_torsion:
+                if args.gen_nef or args.gen_relax or args.gen_shifts or args.export_constraints or args.export_torsion or args.gen_msa:
                     if args.mode != "generate":
                         logger.warning("Synthetic Data Generation is currently only supported in single structure 'generate' mode.")
                     else:
@@ -672,6 +691,7 @@ def main() -> None:
                         from .contact import compute_contact_map
                         from .export import export_constraints
                         from .torsion import calculate_torsion_angles, export_torsion_angles
+                        from .evolution import generate_msa_sequences, write_msa
                         
                         import biotite.structure.io.pdb as pdb_io
                         import io
@@ -752,6 +772,13 @@ def main() -> None:
                                 angles = calculate_torsion_angles(structure)
                                 export_torsion_angles(angles, args.export_torsion, fmt=args.torsion_format)
                                 logger.info(f"Torsion angles exported to: {os.path.abspath(args.export_torsion)}")
+                            
+                            # 6. MSA Generation (Phase 12)
+                            if args.gen_msa:
+                                sequences = generate_msa_sequences(structure, n_seqs=args.msa_depth, mutation_rate=args.mutation_rate)
+                                msa_filename = output_filename.replace(".pdb", ".fasta")
+                                write_msa(sequences, msa_filename)
+                                logger.info(f"Synthetic MSA generated: {os.path.abspath(msa_filename)}")
 
                 # Open 3D viewer if requested (MOVED AFTER NMR calc to access generated_restraints)
                 if args.visualize:

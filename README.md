@@ -327,6 +327,19 @@ This effectively demonstrates:
 - `--torsion-format {csv,json}`: Format for the exported data.
   - Default: `csv`
 
+#### **Synthetic MSA (Evolution) **
+
+- `--gen-msa`: Generate a Multiple Sequence Alignment (MSA) by simulating neutral drift.
+  - Conserves hydrophobic core residues while mutating surface residues.
+  - Outputs a FASTA file useful for testing co-evolution signals in AI models.
+
+- `--msa-depth <N>`: Number of sequences to generate.
+  - Default: `100`
+
+- `--mutation-rate <RATE>`: Probability of mutation per position per sequence.
+  - Default: `0.1` (10% divergence per sequence).
+
+
 
 #### **Output Options**
 

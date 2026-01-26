@@ -683,3 +683,40 @@ class TestMainCLI:
         
         assert "Torsion angles exported to" in caplog.text
 
+    def test_run_msa_generation(self, mocker, tmp_path, caplog):
+        """Test generation of Synthetic MSA."""
+        caplog.set_level(logging.INFO)
+        output_file = tmp_path / "msa_test.pdb"
+        
+        # Valid PDB with Hydrogen
+        valid_pdb = (
+            "HEADER    test\n" +
+            create_atom_line(1, "N",  "ALA", "A", 1, -1.458, 0, 0, "N") + "\n" +
+            create_atom_line(2, "CA", "ALA", "A", 1, 0, 0, 0, "C") + "\n" +
+            create_atom_line(3, "C",  "ALA", "A", 1, 1.525, 0, 0, "C") + "\n" + 
+            create_atom_line(4, "H",  "ALA", "A", 1, -1.5, 1, 0, "H")
+        )
+        mocker.patch("synth_pdb.main.generate_pdb_content", return_value=valid_pdb)
+        
+        # Mock evolution
+        mocker.patch("synth_pdb.evolution.generate_msa_sequences", return_value=["AAA", "AAB"])
+        mocker.patch("synth_pdb.evolution.write_msa")
+        
+        test_args = [
+            "synth_pdb", 
+            "--length", "1", 
+            "--output", str(output_file),
+            "--gen-msa", "--msa-depth", "10", "--mutation-rate", "0.5"
+        ]
+        mocker.patch("sys.argv", test_args)
+        mocker.patch("sys.exit")
+        
+        # We need SASA calc to work or be mocked if calculate_relative_sasa is called inside generate_msa_sequences.
+        # But here we mocked generate_msa_sequences top-level function, so it won't call SASA.
+        # Wait, calculate_relative_sasa is inside generate_msa_sequences.
+        # Since I mocked generate_msa_sequences, I don't need to mock internals.
+        
+        main.main()
+        
+        assert "Synthetic MSA generated" in caplog.text
+
