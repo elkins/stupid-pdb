@@ -5,7 +5,7 @@ Biophysical Realism Module.
 Enhances synthetic structures with realistic physical chemistry properties.
 Includes:
 - pH Titration (Histidine protonation states)
-- Terminal Capping (N-acetyl/C-amide) - Placeholder/Future
+- Terminal Capping (N-acetyl/C-amide)
 - Charge assignment
 
 Educational Note - pH and Protonation:
@@ -18,6 +18,18 @@ Biological function depends on pH. The most sensitive residue near physiological
 import biotite.structure as struc
 import logging
 import random
+import numpy as np
+from .geometry import position_atom_3d_from_internal_coords, calculate_angle
+from .data import (
+    BOND_LENGTH_N_CA,
+    BOND_LENGTH_CA_C,
+    BOND_LENGTH_C_N,
+    BOND_LENGTH_C_O,
+    ANGLE_N_CA_C,
+    ANGLE_CA_C_N,
+    ANGLE_C_N_CA,
+    ANGLE_CA_C_O,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,13 +90,158 @@ def apply_ph_titration(structure: struc.AtomArray, ph: float = 7.4) -> struc.Ato
 
 def cap_termini(structure: struc.AtomArray) -> struc.AtomArray:
     """
-    Add terminal capping groups (ACE/NME).
+    Add terminal capping groups (ACE/NME) to the peptide.
     
-    CURRENT STATUS: Placeholder. 
-    Implementing full coordinate construction for caps requires `generator` logic 
-    which might cause circular imports. 
-    For now, this logs a warning that capping was requested but full geometry 
-    construction is pending implementation.
+    EDUCATIONAL NOTE - Terminal Capping:
+    ====================================
+    Biological proteins are usually long chains. However, simulation and experiments
+    often use shorter peptide fragments.
+    
+    Uncapped termini (NH3+ and COO-) introduce strong charges that are often unrealistic
+    for an internal fragment of a protein.
+    - N-terminus cap: Acetyl (ACE) -> replaces H with CH3-CO-
+      Eliminates positive charge at N-term.
+      Structure: CH3-C(=O)-NH-...
+    - C-terminus cap: N-Methylamide (NME) -> replaces O with NH-CH3
+      Eliminates negative charge at C-term.
+      Structure: ...-CO-NH-CH3
+      
+    This function geometrically constructs these caps attached to the start and end residues.
+    
+    Args:
+        structure: Input peptide structure
+        
+    Returns:
+        Structure with ACE and NME residues added.
     """
-    logger.warning("Terminal Capping (ACE/NME) requested but not fully implemented in this version.")
-    return structure
+    logger.info("Adding terminal caps (ACE/NME)...")
+    
+    # 1. Identify Termini
+    res_ids = sorted(list(set(structure.res_id)))
+    if not res_ids:
+        return structure
+
+    n_term_id = res_ids[0]
+    c_term_id = res_ids[-1]
+    
+    # --- ACE (Acetyl) at N-terminus ---
+    # Attaches to N of first residue.
+    # Geometry:
+    # We need to place C (carbonyl), O (carbonyl oxygen), and CH3 (methyl).
+    # Since we are prepending, we work "backwards" from N.
+    
+    try:
+        n_1 = structure[(structure.res_id == n_term_id) & (structure.atom_name == "N")][0]
+        ca_1 = structure[(structure.res_id == n_term_id) & (structure.atom_name == "CA")][0]
+        c_1 = structure[(structure.res_id == n_term_id) & (structure.atom_name == "C")][0]
+        
+        # 1. Place ACE C (Carbonyl)
+        # We position it relative to N-CA-C frame of first residue.
+        # Bond: C(ace)-N = 1.33 A
+        # Angle: C(ace)-N-CA = 121.7 deg
+        # Dihedral: C(ace)-N-CA-C. This corresponds to the Phi angle definition (C_prev-N-CA-C).
+        # We'll assume a standard Extended conformation (Phi=-135) or similar to avoid clashes.
+        # Or even better, 180 (Trans) relative to CA-C for maximum clearance.
+        phi_assume = -135.0 # Beta sheet-like, safe usually
+        
+        c_ace_coord = position_atom_3d_from_internal_coords(
+            c_1.coord, ca_1.coord, n_1.coord,
+            BOND_LENGTH_C_N, ANGLE_C_N_CA, phi_assume
+        )
+        
+        # 2. Place ACE O (Carbonyl Oxygen)
+        # Bond: O-C = 1.23 A
+        # Angle: O-C-N = 123.0 deg (approx)
+        # Dihedral: O-C-N-CA.
+        # Peptide bond is planar. O is usually trans to H(N), which means cis to CA?
+        # Actually in trans peptide bond, O and H are trans. atomic config: O=C-N-H.
+        # O and CA are usually 'trans' (180).
+        o_ace_coord = position_atom_3d_from_internal_coords(
+            ca_1.coord, n_1.coord, c_ace_coord,
+            BOND_LENGTH_C_O, 123.0, 180.0
+        )
+        
+        # 3. Place ACE CH3 (Methyl)
+        # Bond: CH3-C = 1.50 A
+        # Angle: CH3-C-N = 116.0 deg
+        # Dihedral: CH3-C-N-CA (Omega). Standard Trans = 180.
+        ch3_ace_coord = position_atom_3d_from_internal_coords(
+            ca_1.coord, n_1.coord, c_ace_coord,
+            1.50, 116.0, 180.0
+        )
+        
+        # Create ACE atoms (Residue ID: n_term_id - 1)
+        # If n_term_id is 1, ACE is 0.
+        ace_res_id = n_term_id - 1
+        ace_atoms = [
+            struc.Atom(ch3_ace_coord, atom_name="CH3", res_id=ace_res_id, res_name="ACE", element="C", hetero=False),
+            struc.Atom(c_ace_coord, atom_name="C", res_id=ace_res_id, res_name="ACE", element="C", hetero=False),
+            struc.Atom(o_ace_coord, atom_name="O", res_id=ace_res_id, res_name="ACE", element="O", hetero=False),
+        ]
+        ace_structure = struc.array(ace_atoms)
+        ace_structure.chain_id[:] = "A"
+
+    except IndexError:
+        logger.warning("Could not build ACE cap: Missing N/CA/C on N-terminus.")
+        ace_structure = None
+
+
+    # --- NME (N-Methylamide) at C-terminus ---
+    # Attaches to C of last residue.
+    # Geometry:
+    # We place N, and CH3 (methyl).
+    
+    try:
+        c_last = structure[(structure.res_id == c_term_id) & (structure.atom_name == "C")][0]
+        ca_last = structure[(structure.res_id == c_term_id) & (structure.atom_name == "CA")][0]
+        n_last = structure[(structure.res_id == c_term_id) & (structure.atom_name == "N")][0]
+        
+        # 1. Place NME N
+        # We assume Trans peptide bond (Omega=180) relative to previous CA-C.
+        # Bond: N-C = 1.33 A
+        # Angle: N-C-CA = 116.2 deg
+        # Dihedral: N-C-CA-N(prev). This is Psi. 
+        # We assume Psi = -47 (Alpha) or 135 (Beta). Let's use 135 (Extended) to stick out.
+        psi_assume = 135.0
+        
+        n_nme_coord = position_atom_3d_from_internal_coords(
+            n_last.coord, ca_last.coord, c_last.coord,
+            BOND_LENGTH_C_N, ANGLE_CA_C_N, psi_assume
+        )
+        
+        # 2. Place NME CH3
+        # Bond: CH3-N = 1.45 A
+        # Angle: CH3-N-C = 122.0 deg (approx for amide nitrogen)
+        # Dihedral: CH3-N-C-CA.
+        # Standard Trans peptide bond (Omega = 180).
+        ch3_nme_coord = position_atom_3d_from_internal_coords(
+            ca_last.coord, c_last.coord, n_nme_coord,
+            1.45, 122.0, 180.0
+        )
+        
+        # Create NME atoms
+        nme_res_id = c_term_id + 1
+        nme_atoms = [
+            struc.Atom(n_nme_coord, atom_name="N", res_id=nme_res_id, res_name="NME", element="N", hetero=False),
+            struc.Atom(ch3_nme_coord, atom_name="CH3", res_id=nme_res_id, res_name="NME", element="C", hetero=False),
+        ]
+        nme_structure = struc.array(nme_atoms)
+        nme_structure.chain_id[:] = "A"
+
+    except IndexError:
+        logger.warning("Could not build NME cap: Missing N/CA/C on C-terminus.")
+        nme_structure = None
+
+
+    # Combine
+    final_structure = structure
+    
+    if ace_structure:
+        # Prepend
+        final_structure = ace_structure + final_structure
+        
+    if nme_structure:
+        # Append
+        final_structure = final_structure + nme_structure
+        
+    return final_structure

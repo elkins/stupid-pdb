@@ -1,3 +1,4 @@
+
 import pytest
 import numpy as np
 import biotite.structure as struc
@@ -55,15 +56,40 @@ class TestBiophysics:
         assert titrated.res_name[1] in ["HIE", "HID", "HIS"]
         assert titrated.res_name[1] != "HIP"
 
-    def test_cap_termini_placeholder(self):
-        """
-        Calculations for capping are complex (require coordinates).
-        We will test that the function exists and handles basic input.
-        """
+    def test_cap_termini_functionality(self):
+        """Test ACE and NME addition."""
         if biophysics is None:
             pytest.skip("Module not implemented")
-            
-        # We need a valid structure with N/C coordinates to place caps.
-        # Ideally we test this with a full integration test or a mock that returns valid coords.
-        # For unit test, we'll check if it attempts to add residues.
-        pass
+
+        # Create 2-residue peptide with backbone atoms
+        # ALA-ALA
+        # We need N, CA, C coords to avoid IndexError in biophysics.py
+        # Using dummy coords
+        n1 = struc.Atom([0,0,0], atom_name="N", res_id=1, res_name="ALA", element="N")
+        ca1 = struc.Atom([1.4,0,0], atom_name="CA", res_id=1, res_name="ALA", element="C")
+        c1 = struc.Atom([2.0,1.2,0], atom_name="C", res_id=1, res_name="ALA", element="C")
+        
+        n2 = struc.Atom([2.8,1.2,0], atom_name="N", res_id=2, res_name="ALA", element="N")
+        ca2 = struc.Atom([3.5,2.4,0], atom_name="CA", res_id=2, res_name="ALA", element="C")
+        c2 = struc.Atom([4.5,2.4,1.2], atom_name="C", res_id=2, res_name="ALA", element="C")
+        
+        atoms = struc.array([n1, ca1, c1, n2, ca2, c2])
+        atoms.chain_id = np.array(["A"]*6)
+        
+        capped = biophysics.cap_termini(atoms)
+        
+        # Check for ACE
+        assert "ACE" in capped.res_name
+        ace_atoms = capped[capped.res_name == "ACE"]
+        assert len(ace_atoms) == 3 # C, O, CH3
+        # Check ACE geometry exists (not 0,0,0 unless inputs were)
+        # Inputs were close to 0 but distinct.
+        
+        # Check for NME
+        assert "NME" in capped.res_name
+        nme_atoms = capped[capped.res_name == "NME"]
+        assert len(nme_atoms) == 2 # N, CH3
+        
+        # Check total length
+        # original 6 + 3 ACE + 2 NME = 11
+        assert len(capped) == 11
