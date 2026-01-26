@@ -319,6 +319,20 @@ def main() -> None:
         help="Mutation rate per position per sequence (default: 0.1).",
     )
     
+    # Phase 13: Distogram Export (AI Trinity #3)
+    parser.add_argument(
+        "--export-distogram",
+        type=str,
+        help="Export NxN Distance Matrix (Distogram) to a file. Specify output filename.",
+    )
+    parser.add_argument(
+        "--distogram-format",
+        type=str,
+        choices=["json", "csv", "npz"],
+        default="json",
+        help="Format for distogram export (default: json).",
+    )
+    
     parser.add_argument(
         "--seed",
         type=int,
@@ -679,7 +693,7 @@ def main() -> None:
                 # We perform calculations first, so we can capture data (like restraints) for visualization if needed.
                 generated_restraints = None # To hold restraints for viewer
                 
-                if args.gen_nef or args.gen_relax or args.gen_shifts or args.export_constraints or args.export_torsion or args.gen_msa:
+                if args.gen_nef or args.gen_relax or args.gen_shifts or args.export_constraints or args.export_torsion or args.gen_msa or args.export_distogram:
                     if args.mode != "generate":
                         logger.warning("Synthetic Data Generation is currently only supported in single structure 'generate' mode.")
                     else:
@@ -692,6 +706,7 @@ def main() -> None:
                         from .export import export_constraints
                         from .torsion import calculate_torsion_angles, export_torsion_angles
                         from .evolution import generate_msa_sequences, write_msa
+                        from .distogram import calculate_distogram, export_distogram
                         
                         import biotite.structure.io.pdb as pdb_io
                         import io
@@ -779,6 +794,12 @@ def main() -> None:
                                 msa_filename = output_filename.replace(".pdb", ".fasta")
                                 write_msa(sequences, msa_filename)
                                 logger.info(f"Synthetic MSA generated: {os.path.abspath(msa_filename)}")
+
+                            # 7. Distogram Export (Phase 13)
+                            if args.export_distogram:
+                                matrix = calculate_distogram(structure)
+                                export_distogram(matrix, args.export_distogram, fmt=args.distogram_format)
+                                logger.info(f"Distogram exported to: {os.path.abspath(args.export_distogram)}")
 
                 # Open 3D viewer if requested (MOVED AFTER NMR calc to access generated_restraints)
                 if args.visualize:

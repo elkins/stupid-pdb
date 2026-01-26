@@ -339,6 +339,15 @@ This effectively demonstrates:
 - `--mutation-rate <RATE>`: Probability of mutation per position per sequence.
   - Default: `0.1` (10% divergence per sequence).
 
+#### **Distogram Export (Spatial Relationships) **
+- `--export-distogram <FILE>`: Export NxN Distance Matrix representing the protein geometry.
+  - Rotation-invariant representation ideal for AI model training/validation.
+  - Supports `json`, `csv`, or `npz` (NumPy) formats.
+  - Example: `--export-distogram dist.json`
+
+- `--distogram-format {json,csv,npz}`: Output format.
+  - Default: `json`
+
 
 
 #### **Output Options**

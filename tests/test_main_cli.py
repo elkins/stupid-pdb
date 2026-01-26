@@ -720,3 +720,35 @@ class TestMainCLI:
         
         assert "Synthetic MSA generated" in caplog.text
 
+    def test_run_distogram_export(self, mocker, tmp_path, caplog):
+        """Test generation of Distogram."""
+        caplog.set_level(logging.INFO)
+        output_file = tmp_path / "dist_test.pdb"
+        
+        # Valid PDB with Hydrogen
+        valid_pdb = (
+            "HEADER    test\n" +
+            create_atom_line(1, "N",  "ALA", "A", 1, -1.458, 0, 0, "N") + "\n" +
+            create_atom_line(2, "CA", "ALA", "A", 1, 0, 0, 0, "C") + "\n" +
+            create_atom_line(3, "C",  "ALA", "A", 1, 1.525, 0, 0, "C") + "\n" + 
+            create_atom_line(4, "H",  "ALA", "A", 1, -1.5, 1, 0, "H")
+        )
+        mocker.patch("synth_pdb.main.generate_pdb_content", return_value=valid_pdb)
+        
+        # Mock calculation and export
+        mocker.patch("synth_pdb.distogram.calculate_distogram", return_value=np.zeros((1,1)))
+        mocker.patch("synth_pdb.distogram.export_distogram")
+        
+        test_args = [
+            "synth_pdb", 
+            "--length", "1", 
+            "--output", str(output_file),
+            "--export-distogram", str(tmp_path / "dist.json")
+        ]
+        mocker.patch("sys.argv", test_args)
+        mocker.patch("sys.exit")
+        
+        main.main()
+        
+        assert "Distogram exported to" in caplog.text
+
