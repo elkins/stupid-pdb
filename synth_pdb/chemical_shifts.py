@@ -149,3 +149,44 @@ def predict_chemical_shifts(structure: struc.AtomArray) -> Dict[str, Dict[str, D
         results[chain_id][res_id] = atom_shifts
         
     return results
+
+def calculate_csi(shifts: Dict[str, Dict[int, Dict[str, float]]], structure: struc.AtomArray) -> Dict[str, Dict[int, float]]:
+    """
+    Calculate Chemical Shift Index (CSI) deviations (Observed - RandomCoil).
+    
+    This metric is used to predict secondary structure:
+    - Positive Delta(CA) (> 0.7 ppm) -> HELIX
+    - Negative Delta(CA) (< -0.7 ppm) -> SHEET
+    
+    returns: {chain_id: {res_id: delta_ppm}}
+    """
+    csi_data = {}
+    
+    # Map residue names for lookup
+    # Need 3-letter codes
+    res_names = {}
+    
+    # Iterate through structure to build map: ResID -> ResName
+    # Using residue starts to handle multi-atom residues correctly
+    res_starts = struc.get_residue_starts(structure)
+    for idx in res_starts:
+        res = structure[idx]
+        res_names[res.res_id] = res.res_name
+        
+    for chain_id, chain_shifts in shifts.items():
+        csi_data[chain_id] = {}
+        for res_id, atom_shifts in chain_shifts.items():
+            if res_id not in res_names:
+                continue
+                
+            res_name = res_names[res_id]
+            
+            # CSI usually uses C-alpha or C-beta
+            # We will use C-alpha (CA) as the primary index
+            if "CA" in atom_shifts and res_name in RANDOM_COIL_SHIFTS:
+                measured = atom_shifts["CA"]
+                random = RANDOM_COIL_SHIFTS[res_name]["CA"]
+                delta = measured - random
+                csi_data[chain_id][res_id] = delta
+                
+    return csi_data
