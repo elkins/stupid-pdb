@@ -777,3 +777,28 @@ class TestMainCLI:
         assert call_kwargs['ph'] == 4.5
         assert call_kwargs['cap_termini'] is True
 
+    def test_run_md_equilibration_options(self, mocker, tmp_path):
+        """Test MD Equilibration flags are passed correctly."""
+        output_file = tmp_path / "md_test.pdb"
+        
+        # Mock generator to check args
+        mock_gen = mocker.patch("synth_pdb.main.generate_pdb_content", return_value="HEADER test")
+        
+        test_args = [
+            "synth_pdb", 
+            "--length", "10", 
+            "--output", str(output_file),
+            "--equilibrate",
+            "--md-steps", "500"
+        ]
+        mocker.patch("sys.argv", test_args)
+        mocker.patch("sys.exit")
+        
+        main.main()
+        
+        # Verify args passed to generator
+        mock_gen.assert_called_once()
+        call_kwargs = mock_gen.call_args.kwargs
+        assert call_kwargs['equilibrate'] is True
+        assert call_kwargs['equilibrate_steps'] == 500
+

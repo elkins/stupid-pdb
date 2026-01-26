@@ -358,6 +358,13 @@ This effectively demonstrates:
   - C-terminus: N-methylamide (`NME`)
   - Removes charged termini ($\text{NH}_3^+$/$\text{COO}^-$) for realistic peptide modeling.
 
+- `--equilibrate`: Run Molecular Dynamics (MD) equilibration.
+  - Simulates the protein at **300 Kelvin** (solution state).
+  - Uses Langevin Dynamics to shake atoms out of local minima.
+  - Generates a "thermalized" structure closer to NMR conditions.
+  - Options: `--md-steps <INT>` (default 1000, $\approx$ 2 ps).
+
+
 
 
 
@@ -391,6 +398,13 @@ synth-pdb --sequence "ELVIS" --validate --output elvis.pdb
 
 # Use biologically realistic frequencies
 synth-pdb --length 100 --plausible-frequencies
+
+# Generate a random 20-residue alpha helix
+synth_pdb --length 20 --conformation alpha --output random_helix.pdb
+
+# Generate a high-quality, physically realistic structure (Recommended)
+# Includes: Minimization, Terminal Capping, and Thermal Equilibration (MD)
+synth_pdb --length 20 --minimize --cap-termini --equilibrate --output best_structure.pdb
 
 # Generate beta sheet conformation
 synth-pdb --length 20 --conformation beta --output beta_sheet.pdb

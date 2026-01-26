@@ -134,7 +134,26 @@ class EnergyMinimizer:
              
         return self._run_simulation(pdb_file_path, output_path, add_hydrogens=True)
 
-    def _run_simulation(self, input_path, output_path, max_iterations=0, tolerance=10.0, add_hydrogens=True):
+    def equilibrate(self, pdb_file_path: str, output_path: str, steps: int = 1000) -> bool:
+        """
+        Run Thermal Equilibration (MD) at 300K.
+        
+        Args:
+            pdb_file_path: Input PDB/File path.
+            output_path: Output PDB path.
+            steps: Number of MD steps (2 fs per step). 1000 steps = 2 ps.
+            
+        Returns:
+            True if successful.
+        """
+        if not HAS_OPENMM:
+             logger.error("Cannot equilibrate: OpenMM not found.")
+             return False
+        
+        # We always add hydrogens for MD
+        return self._run_simulation(pdb_file_path, output_path, add_hydrogens=True, equilibration_steps=steps)
+
+    def _run_simulation(self, input_path, output_path, max_iterations=0, tolerance=10.0, add_hydrogens=True, equilibration_steps=0):
         """Internal worker for setting up and running the OpenMM Simulation."""
         logger.info(f"Processing physics for {input_path}...")
         
@@ -200,19 +219,40 @@ class EnergyMinimizer:
             # Report Energy BEFORE Minimization
             state_initial = simulation.context.getState(getEnergy=True)
             e_init = state_initial.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole)
-            logger.info(f"Initial Potential Energy: {e_init:.2f} kJ/mol")
+            try:
+                logger.info(f"Initial Potential Energy: {e_init:.2f} kJ/mol")
+            except Exception:
+                # Value might be non-numeric (e.g. during testing/mocking) or NaN
+                logger.info(f"Initial Potential Energy: {e_init} kJ/mol")
             
-            if e_init > 1e6:
-                logger.info("  -> High initial energy detected due to steric clashes. Minimization will resolve this.")
+            try:
+                if e_init > 1e6:
+                    logger.info("  -> High initial energy detected due to steric clashes. Minimization will resolve this.")
+            except Exception:
+                pass
             
             # 6. Run Energy Minimization (Gradient Descent)
             logger.info("Minimizing energy...")
-            simulation.minimizeEnergy()
+            # Tolerance is Force threshold (kJ/mol/nm)
+            simulation.minimizeEnergy(maxIterations=max_iterations, tolerance=tolerance*unit.kilojoule/(unit.mole*unit.nanometer))
             
-            # Report Energy AFTER Minimization
+            # 7. Run MD Equilibration (Optional)
+            if equilibration_steps > 0:
+                logger.info(f"Running Thermal Equilibration ({equilibration_steps} steps at 300K)...")
+                # EDUCATIONAL NOTE - Molecular Dynamics (MD):
+                # We now "unfreeze" the protein. The LangevinIntegrator simulates 
+                # collisions with a solvent bath at 300 Kelvin.
+                # This shakes the atoms out of shallow local minima and enables
+                # realistic breathing motions.
+                simulation.step(equilibration_steps)
+            
+            # 8. Report Final Energy
             state_final = simulation.context.getState(getEnergy=True, getPositions=True)
             e_final = state_final.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole)
-            logger.info(f"Final Potential Energy:   {e_final:.2f} kJ/mol")
+            try:
+                logger.info(f"Final Potential Energy:   {e_final:.2f} kJ/mol")
+            except Exception:
+                logger.info(f"Final Potential Energy:   {e_final} kJ/mol")
             
             # 7. Save Result
             with open(output_path, 'w') as f:

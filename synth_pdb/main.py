@@ -346,6 +346,19 @@ def main() -> None:
         help="pH for determining protonation states (default: 7.4). Affects Histidine (HIS/HIP/HIE)."
     )
     
+    # Phase 2: MD Equilibration
+    parser.add_argument(
+        "--equilibrate",
+        action="store_true",
+        help="Run Molecular Dynamics equilibration (at 300K) after minimization. Requires OpenMM."
+    )
+    parser.add_argument(
+        "--md-steps",
+        type=int,
+        default=1000,
+        help="Number of MD steps for equilibration (default: 1000 approx 2ps)."
+    )
+    
     parser.add_argument(
         "--seed",
         type=int,
@@ -529,6 +542,8 @@ def main() -> None:
                 seed=args.seed,
                 ph=args.ph,
                 cap_termini=args.cap_termini,
+                equilibrate=args.equilibrate,
+                equilibrate_steps=args.md_steps,
             )
 
             if not current_pdb_content:

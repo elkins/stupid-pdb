@@ -651,6 +651,8 @@ def generate_pdb_content(
     seed: Optional[int] = None,
     ph: float = 7.4,
     cap_termini: bool = False,
+    equilibrate: bool = False,
+    equilibrate_steps: int = 1000,
 ) -> str:
     """
     Generates PDB content for a linear peptide chain.
@@ -1009,11 +1011,20 @@ def generate_pdb_content(
                 pdb_file.write(input_pdb_path)
                 
                 minimizer = EnergyMinimizer(forcefield_name=forcefield)
+                
                 # We use add_hydrogens_and_minimize because synth-pdb lacks H by default
-                success = minimizer.add_hydrogens_and_minimize(input_pdb_path, output_pdb_path)
+                if equilibrate:
+                    logger.info(f"Running MD Equilibration ({equilibrate_steps} steps). This includes minimization.")
+                    success = minimizer.equilibrate(
+                        input_pdb_path, 
+                        output_pdb_path, 
+                        steps=equilibrate_steps
+                    )
+                else:
+                    success = minimizer.add_hydrogens_and_minimize(input_pdb_path, output_pdb_path)
                 
                 if success:
-                    logger.info("Minimization successful.")
+                    logger.info("Minimization/Equilibration successful.")
                     # Read back the optimized structure
                     # We return the CONTENT of this file
                     # Read back the optimized structure
