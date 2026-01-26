@@ -963,6 +963,7 @@ def generate_pdb_content(
     # EDUCATIONAL NOTE - Energy Minimization (Phase 2):
     # OpenMM requires a file-based interaction usually for easy topology handling from PDB.
     # So we write the current state to a temp file, minimize it, and read it back (or return the content).
+    atomic_and_ter_content = None
     if minimize_energy:
         logger.info("Running energy minimization (OpenMM)...")
         try:
