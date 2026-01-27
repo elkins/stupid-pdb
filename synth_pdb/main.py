@@ -538,6 +538,23 @@ def main() -> None:
         )
         return
 
+    if args.mode == "dataset":
+        from .dataset import DatasetGenerator
+        out_dir = args.output if args.output else "dataset"
+        
+        logger.info(f"Starting bulk dataset generation in '{out_dir}'...")
+        generator = DatasetGenerator(
+            output_dir=out_dir,
+            num_samples=args.num_samples,
+            min_length=args.min_length,
+            max_length=args.max_length,
+            train_ratio=args.train_ratio,
+            seed=args.seed
+        )
+        generator.generate()
+        logger.info(f"Dataset generation complete. Output directory: {os.path.abspath(out_dir)}")
+        return
+
 
     length_for_generator = args.length if args.sequence is None else None
 
@@ -823,15 +840,14 @@ def main() -> None:
                                 # We use compute_contact_map relative to cutoff
                                 # For Export, we typically want BINARY map if using CASP
                                 
-                                # Calculate Binary Map for export
+                                # Calculate Distance Matrix for export
                                 matrix = compute_contact_map(
                                     structure, 
                                     method="ca", 
-                                    threshold=args.constraint_cutoff, 
-                                    power=0 # Binary 0/1
+                                    threshold=args.constraint_cutoff
                                 )
                                 
-                                content = export_constraints(matrix, seq_str, fmt=args.constraint_format)
+                                content = export_constraints(matrix, seq_str, fmt=args.constraint_format, threshold=args.constraint_cutoff)
                                 
                                 export_file = args.export_constraints
                                 with open(export_file, "w") as f:

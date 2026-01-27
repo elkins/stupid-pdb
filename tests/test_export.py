@@ -52,5 +52,36 @@ def test_export_csv_format(mock_matrix):
     seq = "AAAA"
     output = export_constraints(mock_matrix, sequence=seq, fmt="csv")
     
-    # Expect: ResID1,ResID2,Probability
+    # Expect: Res1,Res2,Value
     assert "1,4,1.0" in output
+
+def test_export_casp_variety():
+    """
+    Regression test: Ensure CASP export reflects varying distances.
+    This would have caught the issue where all lines had identical '8.0' thresholds.
+    """
+    # Create distance matrix with varied values > 1.0
+    dist_mat = np.zeros((5, 5))
+    dist_mat[0, 2] = 3.5
+    dist_mat[0, 3] = 7.2
+    dist_mat[1, 4] = 5.1
+    
+    seq = "AAAAA"
+    # threshold 8.0
+    output = export_constraints(dist_mat, sequence=seq, fmt="casp", threshold=8.0)
+    
+    lines = output.strip().split("\n")
+    
+    # Check for specific distance reflections in column 4 (d_max)
+    # i j d_min d_max prob
+    # 0 2 -> 1 3 -> 3.5
+    # 0 3 -> 1 4 -> 7.2
+    # 1 4 -> 2 5 -> 5.1
+    
+    assert "1 3 0.0 3.5 1.00000" in lines
+    assert "1 4 0.0 7.2 1.00000" in lines
+    assert "2 5 0.0 5.1 1.00000" in lines
+    
+    # Verify we don't have repetitive 8.0 values
+    count_8 = sum(1 for line in lines if "8.0" in line)
+    assert count_8 == 0, "CASP output should contain actual distances, not the default threshold."

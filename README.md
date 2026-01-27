@@ -32,6 +32,7 @@ A command-line tool to generate Protein Data Bank (PDB) files with full atomic r
 - Random sequence generation with uniform or biologically plausible frequencies
 - **Conformational diversity**: Generate alpha helices, beta sheets, extended chains, or random conformations
 - **Rotamer-based side-chain placement** for all 20 standard amino acids (Dunbrack library)
+- **Bulk Dataset Generation**: Generate thousands of (Structure, Sequence, Contact Map) triplets for AI training via `--mode dataset`.
 
 🔬 **Validation Suite**
 - Bond length validation
@@ -364,6 +365,15 @@ This effectively demonstrates:
   - Generates a "thermalized" structure closer to NMR conditions.
   - Options: `--md-steps <INT>` (default 1000, $\approx$ 2 ps).
 
+#### **Bulk Dataset Generation (AI)**
+
+- `--mode dataset`: Enable bulk generation mode.
+- `--num-samples <N>`: Number of samples to generate (default 100).
+- `--min-length <N>`, `--max-length <N>`: Range for random sequence lengths (default 10-50).
+- `--train-ratio <FLOAT>`: Fraction of samples for the training set (default 0.8).
+- `--output <DIR>`: Directory to save the dataset.
+
+
 
 
 
@@ -414,6 +424,9 @@ synth-pdb --length 15 --conformation extended
 
 # Generate random conformation (mixed alpha/beta regions)
 synth-pdb --length 30 --conformation random
+
+# 🤖 Bulk dataset generation for AI training
+synth-pdb --mode dataset --num-samples 500 --min-length 10 --max-length 40 --output ./my_dataset
 ```
 
 #### Quality Control

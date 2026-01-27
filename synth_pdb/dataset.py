@@ -124,12 +124,20 @@ class DatasetGenerator:
                     pdb_file = pdb.PDBFile.read(io.StringIO(pdb_content))
                     structure = pdb_file.get_structure(model=1)
                     
-                    # Calculate map (threshold 8.0A standard)
-                    # compute_contact_map requires power=0 for binary output suitable for CASP?
-                    # export_constraints takes raw numeric or binary. CASP usually wants probabilities or distances.
-                    # Standard contact map usually binary 0/1. export.py lines 37-38 check `val > 0.0`.
-                    # Let's use power=0 to get clean binary contacts.
-                    cmap = compute_contact_map(structure, threshold=8.0, power=0)
+                    # educational_note:
+                    # -----------------
+                    # Why Distance Matrices instead of Binary Contact Maps?
+                    #
+                    # Binary Maps (0/1) are common for "Contact Prediction" (a classification task). 
+                    # However, they discard the detailed geometry of the protein. Modern 
+                    # Structure Prediction models (like AlphaFold) use "Distograms" (weighted 
+                    # distance binned distributions) or raw distances to learn a continuous 
+                    # representation of the energy landscape.
+                    #
+                    # By passing power=None here, we generate raw distances. This allows the 
+                    # CASP exporter to report the exact ground-truth distance for every pair 
+                    # within the threshold, rather than just marking them all as "8.0".
+                    cmap = compute_contact_map(structure, threshold=8.0)
                     
                     # Get sequence for export header
                     # Biotite structure.res_name has 3-letter codes
@@ -146,7 +154,7 @@ class DatasetGenerator:
                     with open(pdb_save_path, "w") as out:
                         out.write(pdb_content)
                         
-                    cmap_content = export_constraints(cmap, seq_str, fmt="casp")
+                    cmap_content = export_constraints(cmap, seq_str, fmt="casp", threshold=8.0)
                     with open(cmap_save_path, "w") as out:
                         out.write(cmap_content)
                         
