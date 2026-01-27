@@ -540,25 +540,23 @@ synth-pdb --length 15 --conformation alpha --visualize
 # Classic protein architecture with two helices and a turn
 synth-pdb --sequence "AAAAAAGGGAAAAA" --structure "1-6:alpha,7-9:random,10-14:alpha" --visualize
 
-# 🎀 Beta Hairpin
-# Two antiparallel beta strands connected by a turn
-synth-pdb --sequence "VVVVVGGVVVVV" --structure "1-5:beta,6-8:random,9-12:beta" --visualize
+# 🧬 "Textbook" Stabilized Alpha Helix (Salt Bridges)
+# Demonstrates charge pairs (Glu-Lys) stabilizing the backbone (i, i+4)
+# Use --minimize to geometry-optimize these ionic interactions
+synth-pdb --sequence "EAAKEAAKEAAKEAAK" --conformation alpha --minimize --cap-termini --visualize
 
-# 🌀 Coiled-Coil Motif
-# Two alpha helices - common in structural proteins
-synth-pdb --sequence "LKELEKELEKELEKEL" --conformation alpha --visualize
+# 🔗 Zinc Finger with Metal Coordination
+# See the Zinc ion (Zn2+) automatically coordinated by Cys/His residues!
+# The --minimize flag applies harmonic constraints to the metal center.
+synth-pdb --sequence "CPHCGKSFSQKSDLVKHQRT" --structure "1-10:beta,11-20:alpha" --metal-ions auto --minimize --visualize
 
-# 🧲 Leucine Zipper
-# Alpha helix with leucine repeats every 7 residues
-synth-pdb --sequence "LKELEKELEKELEKELEKELEKEL" --conformation alpha --visualize
-
-# 🦠 Antimicrobial Peptide-like
-# Short amphipathic alpha helix
-synth-pdb --sequence "KWKLFKKIGAVLKVL" --conformation alpha --visualize
+# 🎀 Refined Beta Hairpin
+# Two antiparallel beta strands connected by a turn, relaxed with physics
+synth-pdb --sequence "VVVVVGGVVVVV" --structure "1-5:beta,6-8:random,9-12:beta" --minimize --visualize
 
 # 🧪 Polyproline II Helix (Collagen-like)
 # Left-handed helix, compact and visually distinct
-synth-pdb --sequence "GPGPPGPPGPPGPP" --conformation ppii --visualize
+synth-pdb --sequence "GPGPPGPPGPPGPP" --conformation ppii --minimize --visualize
 ```
 
 **Visualization Tips:**
@@ -573,28 +571,28 @@ The `--structure` parameter enables creation of realistic protein-like structure
 
 ```bash
 # Helix-turn-helix DNA-binding motif
-# Two alpha helices connected by a flexible turn region
-synth-pdb --length 25 --structure "1-10:alpha,11-15:random,16-25:alpha" --output helix_turn_helix.pdb
+# Two alpha helices connected by a flexible turn region, minimized for realism
+synth-pdb --length 25 --structure "1-10:alpha,11-15:random,16-25:alpha" --minimize --output helix_turn_helix.pdb
 
 # Beta-alpha-beta fold unit
 # Common protein architecture with sheet-helix-sheet
-synth-pdb --length 30 --structure "1-10:beta,11-15:random,16-25:alpha,26-30:beta" --output bab_fold.pdb
+synth-pdb --length 30 --structure "1-10:beta,11-15:random,16-25:alpha,26-30:beta" --minimize --output bab_fold.pdb
 
 # Zinc finger with realistic structure
 # Beta sheet + alpha helix (actual zinc finger architecture)
-synth-pdb --sequence "CPHCGKSFSQKSDLVKHQRT" --structure "1-5:beta,6-10:random,11-20:alpha" --output zinc_finger_realistic.pdb
+synth-pdb --sequence "CPHCGKSFSQKSDLVKHQRT" --structure "1-5:beta,6-10:random,11-20:alpha" --minimize --output zinc_finger_realistic.pdb
 
 # Immunoglobulin domain
 # Multiple beta sheets connected by loops (antibody-like)
-synth-pdb --length 40 --structure "1-8:beta,9-12:random,13-20:beta,21-24:random,25-32:beta,33-40:random" --output ig_domain.pdb
+synth-pdb --length 40 --structure "1-8:beta,9-12:random,13-20:beta,21-24:random,25-32:beta,33-40:random" --minimize --output ig_domain.pdb
 
 # Coiled-coil with flexible linker
 # Two helical regions connected by disordered linker
-synth-pdb --length 50 --structure "1-20:alpha,21-30:random,31-50:alpha" --output coiled_coil.pdb
+synth-pdb --length 50 --structure "1-20:alpha,21-30:random,31-50:alpha" --minimize --output coiled_coil.pdb
 
 # Intrinsically disordered region with structured domain
 # Disordered N-terminus, structured C-terminus (common in signaling proteins)
-synth-pdb --length 40 --structure "1-15:random,16-40:alpha" --output idr_with_domain.pdb
+synth-pdb --length 40 --structure "1-15:random,16-40:alpha" --minimize --output idr_with_domain.pdb
 
 # Collagen-like with flexibility
 # PPII helix with occasional flexible regions (more realistic than uniform)
@@ -602,7 +600,7 @@ synth-pdb --sequence "GPGPPGPPGPPGPPGPPGPP" --structure "1-6:ppii,7-9:random,10-
 
 # Beta-hairpin motif
 # Two antiparallel beta strands connected by a turn
-synth-pdb --length 20 --structure "1-7:beta,8-12:random,13-20:beta" --output beta_hairpin.pdb
+synth-pdb --length 20 --structure "1-7:beta,8-12:random,13-20:beta" --refine-clashes 5 --output beta_hairpin.pdb
 ```
 
 **Why This Matters:**
@@ -636,17 +634,17 @@ synth-pdb --sequence GIGAVLKVLTTGLPALISWIKRKRQQ --structure "1-11:alpha,12-14:ra
 *58 residues | PDB: 1BPI*
 A classic model for protein folding studies ("The Hydrogen Atom of Protein Folding"). It is stabilized by three disulfide bonds.
 ```bash
-synth-pdb --sequence RPDFCLEPPYTGPCKARIIRYFYNAKAGLCQTFVYGGCRAKRNNFKSAEDCMRTCGGA --conformation random --refine-clashes 100 --output bpti.pdb
+synth-pdb --sequence RPDFCLEPPYTGPCKARIIRYFYNAKAGLCQTFVYGGCRAKRNNFKSAEDCMRTCGGA --conformation random --minimize --visualize --output bpti.pdb
 ```
-*Educational Concept*: Automatic detection of disulfide bonds (`SSBOND` records) in a randomly folded state. Run with `--validate` to see if the generator placed cysteines close enough to bond!
+*Educational Concept*: Automatic detection of disulfide bonds (`SSBOND` records). The `--minimize` flag brings cysteine sulfurs into proper bonding distance (2.0 Å).
 
 **4. Ubiquitin (Complex Mixed Fold)**
 *76 residues | PDB: 1UBQ*
 A highly conserved regulatory protein with a complex mixed alpha/beta fold (beta grasp fold).
 ```bash
-synth-pdb --sequence MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG --structure "1-7:beta,12-16:beta,23-34:alpha,41-45:beta,48-49:beta,56-59:alpha,66-70:beta" --refine-clashes 50 --best-of-N 5 --output ubiquitin.pdb
+synth-pdb --sequence MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG --structure "1-7:beta,12-16:beta,23-34:alpha,41-45:beta,48-49:beta,56-59:alpha,66-70:beta" --minimize --best-of-N 5 --output ubiquitin.pdb
 ```
-*Educational Concept*: Generating complex, multi-domain topologies and managing steric clashes in larger dense structures.
+*Educational Concept*: Generating complex, multi-domain topologies. Physics-based minimization (`--minimize`) resolves steric clashes better than geometric heuristics alone.
 
 #### For Structural Biologists
 
