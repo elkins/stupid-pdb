@@ -59,6 +59,7 @@ class PDBValidator:
         for line in pdb_content.splitlines():
             stripped_line = line.strip()
             if stripped_line.startswith("ATOM") or stripped_line.startswith("HETATM"):
+                record_name = stripped_line[:6].strip()
                 try:
                     atom_number = int(stripped_line[6:11].strip())
                     atom_name = stripped_line[12:16].strip()
@@ -89,6 +90,7 @@ class PDBValidator:
                             "temp_factor": temp_factor,
                             "element": element,
                             "charge": charge,
+                            "record_name": record_name,
                         }
                     )
                 except (ValueError, IndexError) as e:
@@ -110,8 +112,9 @@ class PDBValidator:
         Converts a single atom dictionary back into a PDB ATOM line.
         """
         x, y, z = atom_data["coords"]
+        record_name = atom_data.get("record_name", "ATOM")
         return (
-            f"ATOM  {atom_data['atom_number']: >5} {atom_data['atom_name']: <4}{atom_data['alt_loc']: <1}"
+            f"{record_name: <6}{atom_data['atom_number']: >5} {atom_data['atom_name']: <4}{atom_data['alt_loc']: <1}"
             f"{atom_data['residue_name']: >3} {atom_data['chain_id']: <1}{atom_data['residue_number']: >4}"
             f"{atom_data['insertion_code']: <1}   "
             f"{x: >8.3f}{y: >8.3f}{z: >8.3f}{atom_data['occupancy']: >6.2f}"
@@ -144,17 +147,21 @@ class PDBValidator:
                 pdb_lines.append(PDBValidator.atoms_to_pdb_line(atom))
                 last_atom_number = atom["atom_number"]
             
-            # Add a TER record after the last atom of the chain
+            # Add a TER record after the last atom of the chain, but only if it's a polymer (contains ATOMs)
             if chain_atoms:
                 last_atom_of_chain = chain_atoms[-1]
-                ter_atom_number = last_atom_of_chain.get("atom_number", 0) + 1
                 
-                # Format the TER record based on the last atom's residue info
-                ter_line = (
-                    f"TER   {ter_atom_number: >5}      {last_atom_of_chain['residue_name']: >3} "
-                    f"{chain_id: <1}{last_atom_of_chain['residue_number']: >4}"
-                )
-                pdb_lines.append(ter_line)
+                # Check if this chain contains any ATOM records (is a polymer)
+                has_polymer_atoms = any(atom.get("record_name", "ATOM") == "ATOM" for atom in chain_atoms)
+                
+                if has_polymer_atoms:
+                    ter_atom_number = last_atom_of_chain.get("atom_number", 0) + 1
+                    # Format the TER record based on the last atom's residue info
+                    ter_line = (
+                        f"TER   {ter_atom_number: >5}      {last_atom_of_chain['residue_name']: >3} "
+                        f"{chain_id: <1}{last_atom_of_chain['residue_number']: >4}"
+                    )
+                    pdb_lines.append(ter_line)
 
         return "\n".join(pdb_lines) + "\n"
 

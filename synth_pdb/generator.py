@@ -653,6 +653,7 @@ def generate_pdb_content(
     cap_termini: bool = False,
     equilibrate: bool = False,
     equilibrate_steps: int = 1000,
+    metal_ions: str = 'auto',
 ) -> str:
     """
     Generates PDB content for a linear peptide chain.
@@ -830,6 +831,11 @@ def generate_pdb_content(
             current_omega = MEAN_OMEGA + np.random.uniform(-OMEGA_VARIATION, OMEGA_VARIATION)
             
             # Correct Atom Placement Logic:
+            # ---------------------------
+            # We use the NeRF (Natural Extension Reference Frame) algorithm to
+            # build the backbone atom-by-atom. For a detailed explanation of the 
+            # math, see the educational note in `synth_pdb/geometry.py`.
+            #
             # 1. Place N using previous Psi (Rotation around CA_prev-C_prev)
             n_coord = position_atom_3d_from_internal_coords(
                 prev_n_atom.coord, prev_ca_atom.coord, prev_c_atom.coord,
@@ -977,6 +983,17 @@ def generate_pdb_content(
     # 2. pH Titration (Protonation States)
     # Adjusts HIS -> HIP/HIE/HID based on pH.
     peptide = biophysics.apply_ph_titration(peptide, ph=ph)
+
+
+    # EDUCATIONAL NOTE - Metal Ion Coordination (Phase 15):
+    # Inorganic cofactors like Zinc (Zn2+) are automatically detected.
+    # If a coordintion motif is found (Cys/His clusters), the ion is 
+    # injected and harmonic constraints are applied in the physics module.
+    if metal_ions == 'auto':
+        from .cofactors import find_metal_binding_sites, add_metal_ion
+        sites = find_metal_binding_sites(peptide)
+        for site in sites:
+            peptide = add_metal_ion(peptide, site)
 
 
     # EDUCATIONAL NOTE - Energy Minimization (Phase 2):

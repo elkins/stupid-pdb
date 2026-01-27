@@ -203,6 +203,7 @@ VAN_DER_WAALS_RADII: Dict[str, float] = {
     "N": 1.55,  # Nitrogen
     "O": 1.52,  # Oxygen
     "S": 1.80,  # Sulfur
+    "ZN": 1.40, # Zinc
 }
 
 # Amino acid properties for sequence improbability checks

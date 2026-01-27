@@ -6,6 +6,16 @@ from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
+# EDUCATIONAL NOTE - Z-Matrix Construction
+# ----------------------------------------
+# Proteins are defined by their "Internal Coordinates" (Z-Matrix):
+# 1. Bond Length (distance between two atoms)
+# 2. Bond Angle (angle between three atoms)
+# 3. Torsion/Dihedral Angle (twist between four atoms)
+#
+# Our generator builds structures by transitioning from this 1D/2D internal 
+# representation into 3D Cartesian space.
+
 def position_atom_3d_from_internal_coords(
     p1: np.ndarray,
     p2: np.ndarray,
@@ -18,16 +28,25 @@ def position_atom_3d_from_internal_coords(
     Calculates the 3D coordinates of a new atom (P4) given the coordinates of three
     preceding atoms (P1, P2, P3) and the internal coordinates.
 
-    # EDUCATIONAL NOTE - Z-Matrix Construction
-    # Proteins are defined by their "Internal Coordinates" (Z-Matrix):
-    # 1. Bond Length (distance between two atoms)
-    # 2. Bond Angle (angle between three atoms)
-    # 3. Torsion/Dihedral Angle (twist between four atoms)
+    # EDUCATIONAL NOTE - NeRF Geometry (Natural Extension Reference Frame)
+    # -----------------------------------------------------------------
+    # Most protein structures are natively defined by their "Internal Coordinates" 
+    # (Z-Matrix): Bond Lengths, Bond Angles, and Torsion/Dihedral Angles.
+    # 
+    # To convert these into 3D Cartesian coordinates (X, Y, Z), we use the 
+    # "NeRF" method (Parsons et al., J. Comput. Chem. 2005). 
     #
-    # To draw this in 3D space (Cartesian X,Y,Z), we use the "NeRF" method 
-    # (Natural Extension Reference Frame).
-    # We essentially walk down the chain, placing the next atom relative to the 
-    # local coordinate system defined by the previous three atoms.
+    # How it works:
+    # 1. We define a local coordinate system based on three previous atoms (P1, P2, P3).
+    # 2. P3 is the origin (0, 0, 0).
+    # 3. The axis b = (P3 - P2) is the primary direction.
+    # 4. We use Gram-Schmidt orthogonalization to define the Plane Normal (c) and 
+    #    the In-Plane Normal (d).
+    # 5. The new atom P4 is then "placed" in this local frame using spherical-to-Cartesian 
+    #    conversion and then transformed back into the global reference frame.
+    #
+    # This algorithm is the engine of our protein builder, allowing us to 
+    # "walk down" the chain atom-by-atom with mathematical precision.
     """
     bond_angle_rad = np.deg2rad(bond_angle_deg)
     dihedral_angle_rad = np.deg2rad(dihedral_angle_deg)

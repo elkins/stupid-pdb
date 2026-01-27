@@ -90,8 +90,10 @@ def _create_3dmol_html(
     Returns:
         Complete HTML document as string
     """
-    # Escape PDB data for JavaScript (prevent injection attacks)
-    pdb_escaped = pdb_data.replace("\\", "\\\\").replace("`", "\\`")
+    # Escape PDB data for JavaScript
+    # We escape backslashes first, then backticks (used in template literals),
+    # and finally $ (to avoid interpolation issues with ${...})
+    pdb_escaped = pdb_data.replace("\\", "\\\\").replace("`", "\\`").replace("$", "\\$")
     
     # Serialize restraints to JSON-like logic in JS
     js_restraints = ""
@@ -178,7 +180,14 @@ def _create_3dmol_html(
 <head>
     <meta charset="utf-8">
     <title>3D Viewer - {filename}</title>
+    <!-- Try to load 3Dmol.js from CDN -->
     <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+    <!-- Fallback CDN in case pitt.edu is down/blocked -->
+    <script>
+        if (typeof $3Dmol === 'undefined') {{
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"><\\/script>');
+        }}
+    </script>
     <style>
         body {{
             margin: 0;
@@ -301,7 +310,16 @@ def _create_3dmol_html(
         </div>
     </div>
 
-    <div id="viewer"></div>
+    <div id="viewer">
+        <div id="loading-msg" style="color: #6b7280; font-style: italic;">
+            🚀 Initializing 3D Engine...
+        </div>
+        <div id="error-overlay">
+            <h3 style="margin-top:0">⚠️ Viewer Error</h3>
+            <p id="error-text">Unexpected error</p>
+            <p style="font-size: 12px; margin-bottom:0">Check your internet connection or try a different browser.</p>
+        </div>
+    </div>
 
     <div id="instructions">
         <span class="emoji">🖱️</span> Left-click + drag to rotate | Scroll to zoom | Right-click + drag to pan
@@ -318,26 +336,53 @@ def _create_3dmol_html(
 
         // Initialize viewer when page loads
         window.addEventListener('load', function() {{
-            let element = document.getElementById('viewer');
-            let config = {{ backgroundColor: 'white' }};
-            viewer = $3Dmol.createViewer(element, config);
+            const loadingMsg = document.getElementById('loading-msg');
+            const errorOverlay = document.getElementById('error-overlay');
+            const errorText = document.getElementById('error-text');
 
-            // Load PDB data
-            let pdbData = `{pdb_escaped}`;
-            // IMPORTANT: keepH: true is required to visualize NMR restraints involving protons!
-            viewer.addModel(pdbData, "pdb", {{keepH: true}});
+            try {{
+                if (typeof $3Dmol === 'undefined') {{
+                    throw new Error("3Dmol.js library failed to load. Please check your internet connection.");
+                }}
 
-            // Set initial style and render
-            applyStyle();
-            
-            // Draw initial restraints
-            drawRestraints();
-            
-            viewer.zoomTo();
-            viewer.render();
-            
-            // Highlight active buttons
-            updateActiveButtons();
+                let element = document.getElementById('viewer');
+                let config = {{ backgroundColor: 'white' }};
+                viewer = $3Dmol.createViewer(element, config);
+
+                // Load PDB data
+                let pdbData = `{pdb_escaped}`;
+                
+                if (!pdbData || pdbData.trim().length === 0) {{
+                    throw new Error("No PDB data provided to viewer.");
+                }}
+
+                // IMPORTANT: keepH: true is required to visualize NMR restraints involving protons!
+                viewer.addModel(pdbData, "pdb", {{keepH: true}});
+
+                // Set initial style and render
+                applyStyle();
+                
+                // Draw initial restraints
+                drawRestraints();
+                
+                viewer.zoomTo();
+                viewer.render();
+                
+                // Hide loading message if we got this far
+                if (loadingMsg) loadingMsg.style.display = 'none';
+
+                // Highlight active buttons
+                updateActiveButtons();
+                console.log("3D Viewer initialized successfully.");
+
+            }} catch (err) {{
+                console.error("3D Viewer Initialization Failed:", err);
+                if (loadingMsg) loadingMsg.style.display = 'none';
+                if (errorOverlay) {{
+                    errorOverlay.style.display = 'block';
+                    errorText.innerText = err.message;
+                }}
+            }}
         }});
         
         // Define Restraints Data
@@ -414,7 +459,15 @@ def _create_3dmol_html(
                 styleObj.line = {{ colorscheme: currentColor, opacity: opacityVal }};
             }}
 
+            // Apply main style to everything first
             viewer.setStyle({{}}, styleObj);
+
+            // ALWAYS render HETATMs (like Zinc) as spheres so they don't disappear in cartoon mode
+            // We use multiple selectors (element and resn) to be as robust as possible
+            viewer.addStyle({{element: 'Zn'}}, {{sphere: {{radius: 1.2, color: 'silver'}}}});
+            viewer.addStyle({{resn: 'ZN'}}, {{sphere: {{radius: 1.2, color: 'silver'}}}});
+            viewer.addStyle({{hetatom: true}}, {{sphere: {{radius: 1.2, color: 'silver'}}}});
+
             viewer.render();
         }}
 

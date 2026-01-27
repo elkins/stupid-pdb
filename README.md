@@ -33,6 +33,8 @@ A command-line tool to generate Protein Data Bank (PDB) files with full atomic r
 - **Conformational diversity**: Generate alpha helices, beta sheets, extended chains, or random conformations
 - **Rotamer-based side-chain placement** for all 20 standard amino acids (Dunbrack library)
 - **Bulk Dataset Generation**: Generate thousands of (Structure, Sequence, Contact Map) triplets for AI training via `--mode dataset`.
+- **Metal Ion Coordination**: Automatic detection and structural injection of cofactors like **Zinc (Zn2+)** with physics-aware harmonic constraints. ✅
+- **Disulfide Bonds**: Automatic detection and annotation of **SSBOND** records for Cysteine pairs. ✅
 
 🔬 **Validation Suite**
 - Bond length validation
@@ -85,6 +87,18 @@ A command-line tool to generate Protein Data Bank (PDB) files with full atomic r
 - **Glycine (GLY)**: Correctly accesses left-handed alpha region (phi > 0) ✅
 - **Proline (PRO)**: Correctly restricts phi angles ✅
 - **Preset Conformations**: (Alpha/Beta/PPII) Input angles are correct, but final structure geometry may vary due to construction method limitations. *Work in Progress.*
+
+#### 📐 NeRF Geometry (The Construction Engine)
+**What**: Natural Extension Reference Frame algorithm  
+**Term**: Building 3D structures from "Internal Coordinates" (Z-Matrix)  
+**Mechanism**: Places each atom (N, CA, C, O) relative to the local coordinate system of the three previous atoms.  
+**Educational Value**: Teaches how math converts 1D sequences + 2D angles into 3D shapes.
+
+#### ⛓️ Metal Coordination (Cofactors)
+**What**: Structural integration of inorganic ions (e.g. Zinc)
+**Motifs**: Detected via ligand clustering (Cys/His sites)
+**Physics**: Applied via Harmonic Constraints in Energy Minimization
+**Importance**: models structural stability of Zinc Fingers and enzymatic sites
 
 #### 🔗 Disulfide Bonds (SSBOND)
 **What**: Covalent bonds between Cysteine residues
@@ -365,6 +379,10 @@ This effectively demonstrates:
   - Generates a "thermalized" structure closer to NMR conditions.
   - Options: `--md-steps <INT>` (default 1000, $\approx$ 2 ps).
 
+- `--metal-ions {auto,none}`: Control metal ion coordination.
+  - `auto` (default): Scans for binding sites and injects ions.
+  - `none`: Disables automatic coordination.
+
 #### **Bulk Dataset Generation (AI)**
 
 - `--mode dataset`: Enable bulk generation mode.
@@ -427,6 +445,9 @@ synth-pdb --length 30 --conformation random
 
 # 🤖 Bulk dataset generation for AI training
 synth-pdb --mode dataset --num-samples 500 --min-length 10 --max-length 40 --output ./my_dataset
+
+# ⛓️ Generate a Zinc Finger with structural cofactors
+synth-pdb --sequence "CPHCGKSFSQKSDLVKHQRT" --minimize --metal-ions auto --output zinc_finger.pdb
 ```
 
 #### Quality Control

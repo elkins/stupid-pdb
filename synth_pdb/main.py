@@ -148,6 +148,13 @@ def main() -> None:
         help="Secondary structure conformation to generate. Options: alpha (default, alpha helix), beta (beta sheet), ppii (polyproline II), extended (stretched), random (random sampling).",
     )
     parser.add_argument(
+        "--metal-ions",
+        type=str,
+        default="auto",
+        choices=["auto", "none"],
+        help="Mechanism for handling metal cofactors (e.g. Zinc). 'auto' (default) scans for binding motifs and inserts ions. 'none' disables this.",
+    )
+    parser.add_argument(
         "--structure",
         type=str,
         default=None,
@@ -587,6 +594,7 @@ def main() -> None:
                 cap_termini=args.cap_termini,
                 equilibrate=args.equilibrate,
                 equilibrate_steps=args.md_steps,
+                metal_ions=args.metal_ions,
             )
 
             if not current_pdb_content:
