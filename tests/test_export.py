@@ -85,3 +85,22 @@ def test_export_casp_variety():
     # Verify we don't have repetitive 8.0 values
     count_8 = sum(1 for line in lines if "8.0" in line)
     assert count_8 == 0, "CASP output should contain actual distances, not the default threshold."
+
+def test_export_csv_variety():
+    """Test CSV export with actual distances."""
+    dist_mat = np.zeros((3, 3))
+    dist_mat[0, 2] = 5.5
+    
+    seq = "AAA"
+    output = export_constraints(dist_mat, sequence=seq, fmt="csv", threshold=6.0)
+    
+    # Header
+    assert "Res1,Res2,Value" in output
+    # Row
+    assert "1,3,5.50000" in output
+
+def test_export_invalid_format():
+    """Test that unknown formats raise ValueError."""
+    mat = np.zeros((2, 2))
+    with pytest.raises(ValueError, match="Unknown format: xml"):
+        export_constraints(mat, "AA", fmt="xml")

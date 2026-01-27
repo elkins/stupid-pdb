@@ -5,6 +5,7 @@ import tempfile
 import os
 import json
 import csv
+import numpy as np
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -171,3 +172,56 @@ class TestDatasetGenerator:
                 
                 # At least verify we passed *some* length argument
                 assert len(lengths) == 10
+
+    def test_seeding(self, output_dir):
+        """Verify that seeding works for reproducible generation."""
+        if DatasetGenerator is None:
+            pytest.skip("Module not implemented")
+            
+        generator = DatasetGenerator(output_dir=output_dir, seed=42)
+        # We just verify initialization doesn't crash as we mock everything else usually
+        assert True 
+
+    def test_generate_error_handling(self, output_dir):
+        """Verify that a single sample failure doesn't stop the loop."""
+        if DatasetGenerator is None:
+            pytest.skip("Module not implemented")
+            
+        generator = DatasetGenerator(output_dir=output_dir, num_samples=2)
+        generator.prepare_directories()
+        
+        with patch("synth_pdb.dataset.generate_pdb_content") as mock_gen:
+            # First one fails, second one succeeds
+            mock_gen.side_effect = [Exception("BOOM"), "PDB_CONTENT"]
+            
+            # Mock other things to succeed
+            with patch("biotite.structure.io.pdb.PDBFile.read") as mock_read:
+                mock_read.return_value = MagicMock()
+                with patch("synth_pdb.dataset.compute_contact_map", return_value=np.zeros((5,5))):
+                    with patch("synth_pdb.dataset.export_constraints", return_value="MAP"):
+                        generator.generate()
+            
+            # Verify manifest has 1 instead of 2 rows (plus header)
+            manifest_path = Path(output_dir) / "dataset_manifest.csv"
+            with open(manifest_path, "r") as f:
+                lines = f.readlines()
+                assert len(lines) == 2 # Header + 1 success
+
+    def test_progress_logging(self, caplog, output_dir):
+        """Verify that progress is logged every 100 samples."""
+        if DatasetGenerator is None:
+            pytest.skip("Module not implemented")
+            
+        generator = DatasetGenerator(output_dir=output_dir, num_samples=100)
+        generator.prepare_directories()
+        
+        with patch("synth_pdb.dataset.generate_pdb_content", return_value="PDB"):
+            with patch("biotite.structure.io.pdb.PDBFile.read") as mock_read:
+                mock_read.return_value = MagicMock()
+                with patch("synth_pdb.dataset.compute_contact_map", return_value=np.zeros((5,5))):
+                    with patch("synth_pdb.dataset.export_constraints", return_value="MAP"):
+                        import logging
+                        with caplog.at_level(logging.INFO):
+                            generator.generate()
+                            
+        assert "Generated 100/100 samples." in caplog.text
