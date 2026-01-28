@@ -678,5 +678,96 @@ BACKBONE_DEPENDENT_ROTAMER_LIBRARY: Dict[str, Dict[str, List[Dict[str, List[floa
             {'chi1': [-60.0], 'chi2': [-90.0], 'prob': 0.50},
             {'chi1': [180.0], 'chi2': [-90.0], 'prob': 0.45}, # t
         ]
+    },
+    
+    # --- Charged Residues (ARG, ASP, GLU) & Polar (GLN, HIS, MET) ---
+    # EDUCATIONAL NOTE - Electrostatics vs Sterics:
+    # While charged residues form salt bridges on the surface, their Chi1 preference
+    # is still dominated by backbone sterics.
+    # - Long chains (ARG, GLU, GLN, MET) behave like Lysine: g- in Helix, Trans in Sheet.
+    # - Short chains (ASP, ASN) have specific "g-" preferences to avoid O...C-backbone clashes.
+    
+    'ARG': {
+        'alpha': [
+            {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [-85.0], 'prob': 0.70}, # g-
+            {'chi1': [180.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [-85.0], 'prob': 0.20}, # t
+            {'chi1': [60.0],  'chi2': [180.0], 'chi3': [180.0], 'chi4': [-85.0], 'prob': 0.10},
+        ],
+        'beta': [
+            {'chi1': [180.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [-85.0], 'prob': 0.50}, # t (Favored in sheet)
+            {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [-85.0], 'prob': 0.40},
+            {'chi1': [60.0],  'chi2': [180.0], 'chi3': [180.0], 'chi4': [-85.0], 'prob': 0.10},
+        ]
+    },
+    'GLU': {
+        'alpha': [
+            {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [0.0], 'prob': 0.70},
+            {'chi1': [180.0], 'chi2': [180.0], 'chi3': [0.0], 'prob': 0.20},
+            {'chi1': [60.0],  'chi2': [180.0], 'chi3': [0.0], 'prob': 0.10},
+        ],
+        'beta': [
+            {'chi1': [180.0], 'chi2': [180.0], 'chi3': [0.0], 'prob': 0.50}, # t
+            {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [0.0], 'prob': 0.40},
+            {'chi1': [60.0],  'chi2': [180.0], 'chi3': [0.0], 'prob': 0.10},
+        ]
+    },
+    'GLN': {
+        'alpha': [
+            {'chi1': [-60.0], 'chi2': [60.0], 'chi3': [0.0], 'prob': 0.70},
+            {'chi1': [180.0], 'chi2': [60.0], 'chi3': [0.0], 'prob': 0.20},
+        ],
+        'beta': [
+            {'chi1': [180.0], 'chi2': [60.0], 'chi3': [0.0], 'prob': 0.50},
+            {'chi1': [-60.0], 'chi2': [60.0], 'chi3': [0.0], 'prob': 0.40},
+        ]
+    },
+    'MET': {
+        'alpha': [
+            {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [70.0], 'prob': 0.75}, # g-
+            {'chi1': [180.0], 'chi2': [180.0], 'chi3': [70.0], 'prob': 0.15},
+        ],
+        'beta': [
+            {'chi1': [180.0], 'chi2': [180.0], 'chi3': [70.0], 'prob': 0.55}, # t
+            {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [70.0], 'prob': 0.35},
+        ]
+    },
+    'ASP': {
+        'alpha': [
+            {'chi1': [-60.0], 'chi2': [0.0], 'prob': 0.80},
+            {'chi1': [180.0], 'chi2': [0.0], 'prob': 0.15},
+        ],
+        'beta': [
+            {'chi1': [-60.0], 'chi2': [0.0], 'prob': 0.50},
+            {'chi1': [180.0], 'chi2': [0.0], 'prob': 0.45}, # t allowed
+        ]
+    },
+    'ASN': {
+        'alpha': [
+            {'chi1': [-60.0], 'chi2': [-20.0], 'prob': 0.80},
+            {'chi1': [180.0], 'chi2': [-20.0], 'prob': 0.15},
+        ],
+        'beta': [
+            {'chi1': [-60.0], 'chi2': [-20.0], 'prob': 0.50},
+            {'chi1': [180.0], 'chi2': [-20.0], 'prob': 0.45},
+        ]
+    },
+    'HIS': {
+        # Similar to Aromatics
+        'alpha': [
+            {'chi1': [-60.0], 'chi2': [-75.0], 'prob': 0.90}, # g-
+            {'chi1': [180.0], 'chi2': [-75.0], 'prob': 0.05}, # t disallowed
+        ],
+        'beta': [
+            {'chi1': [-60.0], 'chi2': [-75.0], 'prob': 0.50},
+            {'chi1': [180.0], 'chi2': [-75.0], 'prob': 0.45}, # t allowed
+        ]
+    },
+    'CYS': {
+         'alpha': [{'chi1': [-60.0], 'prob': 0.90}, {'chi1': [180.0], 'prob': 0.10}],
+         'beta':  [{'chi1': [-60.0], 'prob': 0.50}, {'chi1': [180.0], 'prob': 0.50}],
+    },
+    'SER': {
+         'alpha': [{'chi1': [-60.0], 'prob': 0.45}, {'chi1': [60.0], 'prob': 0.45}, {'chi1': [180.0], 'prob': 0.10}],
+         'beta':  [{'chi1': [-60.0], 'prob': 0.30}, {'chi1': [60.0], 'prob': 0.40}, {'chi1': [180.0], 'prob': 0.30}],
     }
 }

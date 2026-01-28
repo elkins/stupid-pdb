@@ -165,3 +165,48 @@ def test_phe_rotamer_dependence_on_structure():
     assert abs(alpha_trans - beta_trans) > 0.15, \
         f"PHE: Distributions similar. Alpha={alpha_trans}, Beta={beta_trans}"
 
+
+def test_arg_rotamer_dependence():
+    """Verify ARG rotamer dependence (Long/Charged)."""
+    alpha_angles = sample_rotamer_distribution('alpha', res_name="ARG", n_samples=30)
+    alpha_counts = Counter([classify_rotamer(a) for a in alpha_angles])
+    
+    beta_angles = sample_rotamer_distribution('beta', res_name="ARG", n_samples=30)
+    beta_counts = Counter([classify_rotamer(a) for a in beta_angles])
+    
+    # ARG in helix: heavily confined to g-
+    # ARG in sheet: extended 't' rotamer is much more common
+    alpha_trans = alpha_counts['t'] / 30.0
+    beta_trans = beta_counts['t'] / 30.0
+    
+    print(f"ARG Alpha Trans: {alpha_trans}, Beta Trans: {beta_trans}")
+    assert abs(alpha_trans - beta_trans) > 0.15, "ARG: Expected divergence between Alpha and Beta"
+
+def test_glu_rotamer_dependence():
+    """Verify GLU rotamer dependence (similar to ARG)."""
+    alpha_angles = sample_rotamer_distribution('alpha', res_name="GLU", n_samples=30)
+    alpha_counts = Counter([classify_rotamer(a) for a in alpha_angles])
+    
+    beta_angles = sample_rotamer_distribution('beta', res_name="GLU", n_samples=30)
+    beta_counts = Counter([classify_rotamer(a) for a in beta_angles])
+    
+    alpha_trans = alpha_counts['t'] / 30.0
+    beta_trans = beta_counts['t'] / 30.0
+    
+    print(f"GLU Alpha Trans: {alpha_trans}, Beta Trans: {beta_trans}")
+    assert abs(alpha_trans - beta_trans) > 0.15, "GLU: Expected divergence between Alpha and Beta"
+
+def test_his_rotamer_dependence():
+    """Verify HIS rotamer dependence (Aromatic-like)."""
+    alpha_angles = sample_rotamer_distribution('alpha', res_name="HIS", n_samples=30)
+    alpha_counts = Counter([classify_rotamer(a) for a in alpha_angles])
+    
+    beta_angles = sample_rotamer_distribution('beta', res_name="HIS", n_samples=30)
+    beta_counts = Counter([classify_rotamer(a) for a in beta_angles])
+    
+    # Aromatics avoid 't' in Helix due to clash with i-3
+    alpha_trans = alpha_counts['t'] / 30.0
+    beta_trans = beta_counts['t'] / 30.0
+    
+    print(f"HIS Alpha Trans: {alpha_trans}, Beta Trans: {beta_trans}")
+    assert abs(alpha_trans - beta_trans) > 0.15, "HIS: Expected divergence between Alpha and Beta"

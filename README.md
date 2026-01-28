@@ -83,7 +83,7 @@ The preferred shape of a side chain strongly depends on the shape of the backbon
 *   **Sheet ($\beta$)**: The backbone is extended, creating more room for different rotamers.
 
 **Implementation**: Synth-PDB uses a simplified version of the **Dunbrack Library**. It intelligently checks the backbone geometry ($\phi, \psi$) before picking a side chain shape, ensuring biophysical realism.
-**Coverage**: Extended to include **Val, Ile, Thr, Leu, Lys, Phe, Tyr, Trp**.
+**Coverage**: Supports **All 20 Standard Amino Acids** (including charged/polar residues).
 
 #### 🧬 Secondary Structures
 **What**: Regular backbone patterns (helices, sheets)  
@@ -882,8 +882,8 @@ Real protein structures require sophisticated methods like:
    - **Physically Realistic Mode** (`--minimize`): Resolves this by relaxing the structure with OpenMM, but is computationally more expensive.
 
 3. **Rotamer Library**:
-   - **Backbone-Dependent**: Fully implemented for **VAL, ILE, THR, LEU, LYS, PHE, TYR, TRP**.
-   - **Generic**: Other residues (e.g., GLU, GLN, ARG, MET) currently use backbone-independent probabilities.
+   - **Backbone-Dependent**: Fully implemented for **All 20 Amino Acids**.
+   - **Mechanism**: Checks local secondary structure (Alpha/Beta) to select rotamers that avoid backbone clashes.
    - **Rare Rotamers**: Very rare side-chain conformations (<1% probability) may be undersampled.
 
 4. **Environmental Effects**:
@@ -932,7 +932,7 @@ pytest tests/test_generator.py -v
 ```
 
 **Test Coverage**: 95% overall
-- 275 tests covering generation, validation, CLI, and edge cases
+- 282 tests covering generation, validation, CLI, and edge cases
 
 ### Project Structure
 
