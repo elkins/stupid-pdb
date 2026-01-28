@@ -868,37 +868,33 @@ Real protein structures require sophisticated methods like:
 - Energy minimization and conformational search
 - Crystallographic or NMR experimental data
 
-## Limitations (TODO: This needs updating!)
+## Limitations
 
 ### Structural Limitations
 
-1. **Linear Peptides Only**: 
-   - No cyclic peptides
-   - Single chain only (no multi-chain complexes)
-   - No tertiary structure (folding) - structures are extended/linear
+1. **Topology**: 
+   - Primarily generates **linear** variations or simple **disulfide-bonded** loops.
+   - Does not perform *de novo* folding (prediction of tertiary structure from sequence).
+   - Multi-chain complexes are currently limited to simple docking preparations.
 
-2. **Idealized Geometry**:
-   - Bond lengths and angles use standard values
-   - No thermal fluctuations (except small omega angle variation)
-   - Structures may not match experimental geometries exactly
+2. **Geometry**:
+   - **Default Mode**: Uses idealized internal coordinates (perfect bond lengths/angles).
+   - **Physically Realistic Mode** (`--minimize`): Resolves this by relaxing the structure with OpenMM, but is computationally more expensive.
 
-3. **Secondary Structure Simplification**:
-   - Uses fixed phi/psi angles for each conformation type
-   - Real proteins have more variation within secondary structures
-   - No complex tertiary interactions
+3. **Rotamer Library**:
+   - **Backbone-Dependent**: Fully implemented for **VAL, ILE, THR, LEU, LYS, PHE, TYR, TRP**.
+   - **Generic**: Other residues (e.g., GLU, GLN, ARG, MET) currently use backbone-independent probabilities.
+   - **Rare Rotamers**: Very rare side-chain conformations (<1% probability) may be undersampled.
 
-4. **No Environmental Effects**:
-   - No solvent (water) molecules
-   - No ions or cofactors
-   - No pH effects on protonation states
-   - No membrane environment for transmembrane peptides
+4. **Environmental Effects**:
+   - **Solvent**: Uses Implicit Solvent (OBC2) to model water screening, but lacks explicit water molecules.
+   - **Membranes**: No lipid bilayer simulation for transmembrane proteins.
 
 ### Validation Limitations
 
-- **Simplified Ramachandran regions**: 3 main regions only (not 100% accurate)
-- **VdW radii**: Approximate values, not element/hybridization-specific
-- **No electrostatics**: Doesn't check charge-charge interactions
-- **No hydrogen bonding**: Doesn't validate H-bond geometry
+- **Ramachandran Regions**: Uses simplified **rectangular boundaries** for valid phi/psi regions. While faster, this is less rigorous than the contoured probability density functions used by MolProbity.
+- **Electrostatics**: Basic clash detection does not account for long-range electrostatic repulsion/attraction (though `--minimize` does).
+- **Protonation**: Simple pH-based titration (His/Asp/Glu) without full pKa calculation.
 
 ### Terminology: Decoys vs NMR Ensembles
 
