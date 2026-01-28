@@ -184,7 +184,7 @@ class PDBValidator:
             grouped_atoms[chain_id][residue_number][atom_name] = atom
         return grouped_atoms
 
-    def _get_sequences_by_chain(self) -> dict[str, list[str]]:
+    def _get_sequences_by_chain(self) -> Dict[str, List[str]]:
         """
         Extracts the amino acid sequences (list of 3-letter codes) for each chain.
         """
@@ -284,7 +284,7 @@ class PDBValidator:
         # This matches the IUPAC convention for protein dihedrals.
         return np.degrees(np.arctan2(y, x))
 
-    def get_violations(self) -> list[str]:
+    def get_violations(self) -> List[str]:
         """
         Returns a list of detected violations.
         """

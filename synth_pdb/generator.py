@@ -13,7 +13,7 @@ import numpy as np
 #    - NMR: Often used to represent local RMSD across the ensemble.
 
 import logging
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple
 from .data import (
     STANDARD_AMINO_ACIDS,
     ONE_TO_THREE_LETTER_CODE,
@@ -442,7 +442,7 @@ def _resolve_sequence(
         )
 
 
-def _sample_ramachandran_angles(res_name: str) -> tuple[float, float]:
+def _sample_ramachandran_angles(res_name: str) -> Tuple[float, float]:
     """
     Sample phi/psi angles from Ramachandran probability distribution.
     
