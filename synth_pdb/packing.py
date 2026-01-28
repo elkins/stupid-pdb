@@ -112,6 +112,14 @@ class SideChainPacker:
             
             # Apply move
             try:
+                # The reconstruct_sidechain will need to get the template residue.
+                # Since we can't change it there easily without affecting other code,
+                # let's modify it here if needed, or check if reconstruct_sidechain
+                # calls it correctly. Wait, reconstruct_sidechain is imported.
+                # It's likely failing inside reconstruct_sidechain? Or is it failing here?
+                # The traceback says: packing.py:117 Failed to apply rotamer: residue() takes 1 positional argument but 2 were given
+                # But line 117 is the log message! The error happens in reconstruct_sidechain call at line 115.
+                # Let's check geometry.py:reconstruct_sidechain
                 reconstruct_sidechain(peptide, target_res_id, new_rotamer, target_res_name)
             except Exception as e:
                 logger.warning(f"Failed to apply rotamer: {e}")

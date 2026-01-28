@@ -167,7 +167,7 @@ def reconstruct_sidechain(
     try:
         # Determine if terminal? Simple check based on N/C atom presence in adjacent might be overkill
         # Just use 'INTERNAL' for geometry reconstruction usually works fine unless it's PRO N-term
-        ref_res_template = struc.info.residue(res_name, 'INTERNAL')
+        ref_res_template = struc.info.residue(res_name).copy()
     except KeyError:
          logger.warning(f"Unknown residue {res_name}, cannot reconstruct.")
          return
