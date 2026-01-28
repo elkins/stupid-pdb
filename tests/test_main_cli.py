@@ -802,3 +802,73 @@ class TestMainCLI:
         assert call_kwargs['equilibrate'] is True
         assert call_kwargs['equilibrate_steps'] == 500
 
+    # --- New Failure Case Tests ---
+
+    def test_structure_parsing_failure(self, mocker, caplog):
+        """Test failure when --structure parameter is invalid."""
+        caplog.set_level(logging.ERROR)
+        
+        # Invalid structure format (non-integer range)
+        test_args = ["synth_pdb", "--structure", "1-A:alpha", "--output", "fail.pdb"]
+        mocker.patch("sys.argv", test_args)
+        
+        with pytest.raises(SystemExit):
+            main.main()
+        
+        assert "Failed to parse --structure parameter" in caplog.text
+
+    def test_docking_missing_input_pdb(self, mocker, caplog):
+        """Test failing docking mode without input-pdb."""
+        caplog.set_level(logging.ERROR)
+        
+        test_args = ["synth_pdb", "--mode", "docking"] # Missing --input-pdb
+        mocker.patch("sys.argv", test_args)
+        
+        # sys.exit should raise SystemExit to stop execution flow
+        with pytest.raises(SystemExit):
+            main.main()
+        
+        assert "Docking mode requires --input-pdb" in caplog.text
+        
+    def test_pymol_missing_arguments(self, mocker, caplog):
+        """Test failing pymol mode without required args."""
+        caplog.set_level(logging.ERROR)
+        
+        # Missing output-pml
+        test_args = ["synth_pdb", "--mode", "pymol", "--input-pdb", "in.pdb", "--input-nef", "in.nef"]
+        mocker.patch("sys.argv", test_args)
+        
+        with pytest.raises(SystemExit):
+            main.main()
+        
+        assert "PyMOL mode requires --input-pdb, --input-nef, and --output-pml" in caplog.text
+
+    def test_nef_generation_no_hydrogens_error(self, mocker, caplog, tmp_path):
+        """Test error when generating NEF data on structure without hydrogens."""
+        caplog.set_level(logging.ERROR)
+        output_file = tmp_path / "no_h.pdb"
+        
+        # Valid PDB but NO hydrogens
+        no_h_pdb = (
+            "HEADER    test\n" +
+            create_atom_line(1, "N",  "ALA", "A", 1, -1.458, 0, 0, "N") + "\n" +
+            create_atom_line(2, "CA", "ALA", "A", 1, 0, 0, 0, "C") + "\n" +
+            create_atom_line(3, "C",  "ALA", "A", 1, 1.525, 0, 0, "C")
+        )
+        mocker.patch("synth_pdb.main.generate_pdb_content", return_value=no_h_pdb)
+        
+        test_args = [
+            "synth_pdb", 
+            "--length", "1", 
+            "--output", str(output_file),
+            "--gen-nef"
+        ]
+        mocker.patch("sys.argv", test_args)
+        
+        # Does not exit, just logs error
+        main.main()
+        
+        assert "Structure has no hydrogens! NEF/Relaxation requires protons" in caplog.text
+
+
+

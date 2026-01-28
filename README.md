@@ -75,10 +75,15 @@ A command-line tool to generate Protein Data Bank (PDB) files with full atomic r
 **Pattern**: Backbone (0.95-1.00) > Side chains (0.85-0.95)
 
 #### 🔄 Backbone-Dependent Rotamer Libraries
-**What**: Side chains adopt preferred conformations dependent on backbone geometry.
-**Source**: Dunbrack library (experimental distributions).
-**Mechanism**: Uses Alpha-Helix or Beta-Sheet specific probabilities to avoid steric clashes (e.g., 'trans' rotamer is disfavored in helices).
-**Coverage**: All 20 standard amino acids.
+**Definition**: A **Rotamer** (Rotational Isomer) is a low-energy, stable conformation of an amino acid side chain defined by specific values of its side-chain dihedral angles ($\chi_1, \chi_2...$). Side chains are not flopping randomly; they snap into these discrete "preset" shapes.
+
+**The "Backbone-Dependent" Twist**:
+The preferred shape of a side chain strongly depends on the shape of the backbone behind it (Alpha Helix vs Beta Sheet).
+*   **Helix ($\alpha$)**: Side chains pack tightly. Bulky rotamers (like 'trans' chi1 for Val/Ile) often crash into the backbone (steric clash).
+*   **Sheet ($\beta$)**: The backbone is extended, creating more room for different rotamers.
+
+**Implementation**: Synth-PDB uses a simplified version of the **Dunbrack Library**. It intelligently checks the backbone geometry ($\phi, \psi$) before picking a side chain shape, ensuring biophysical realism.
+**Coverage**: Extended to include **Val, Ile, Thr, Leu, Lys, Phe, Tyr, Trp**.
 
 #### 🧬 Secondary Structures
 **What**: Regular backbone patterns (helices, sheets)  

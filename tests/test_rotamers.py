@@ -5,53 +5,69 @@ from collections import Counter
 import synth_pdb.generator
 from synth_pdb.data import ROTAMER_LIBRARY
 
-def get_chi1_angle(peptide, res_id):
+
+def get_chi1_angle(peptide, res_id, res_name="VAL"):
     """
-    Helper to calculate Chi1 angle for Valine (N-CA-CB-CG1) from a generated structure.
+    Helper to calculate Chi1 angle (N-CA-CB-Gamma) from a generated structure.
     """
+    # Determine Gamma atom name based on residue
+    gamma_map = {
+        "VAL": "CG1", # or CG2
+        "ILE": "CG1",
+        "THR": "OG1",
+        "LEU": "CG",
+        "PHE": "CG",
+        "TYR": "CG",
+        "TRP": "CG",
+        "LYS": "CG",
+        "SER": "OG",
+        "CYS": "SG",
+        "MET": "CG", # standard
+        "ASP": "CG",
+        "GLU": "CG",
+        "GLN": "CG",
+        "ARG": "CG",
+        "ASN": "CG",
+        "HIS": "CG",
+    }
+    g_name = gamma_map.get(res_name, "CG")
+    
     # Get atoms
     try:
         n = peptide[(peptide.res_id == res_id) & (peptide.atom_name == "N")][0]
         ca = peptide[(peptide.res_id == res_id) & (peptide.atom_name == "CA")][0]
         cb = peptide[(peptide.res_id == res_id) & (peptide.atom_name == "CB")][0]
-        cg1 = peptide[(peptide.res_id == res_id) & (peptide.atom_name == "CG1")][0]
+        gamma = peptide[(peptide.res_id == res_id) & (peptide.atom_name == g_name)][0]
     except IndexError:
         return None
 
     # Calculate dihedral
     from synth_pdb.geometry import calculate_dihedral_angle
-    angle = calculate_dihedral_angle(n.coord, ca.coord, cb.coord, cg1.coord)
+    angle = calculate_dihedral_angle(n.coord, ca.coord, cb.coord, gamma.coord)
     return angle
 
-def sample_rotamer_distribution(conformation, n_samples=50):
+def sample_rotamer_distribution(conformation, res_name="VAL", n_samples=30):
     """
-    Generates N peptides of Length 1 (Just Valine) with a specific conformation
+    Generates N peptides of Length 1 (Just the residue) with a specific conformation
     and returns the list of observed Chi1 angles.
     """
     angles = []
+    seq = f"ALA-{res_name}-ALA"
+    
     for i in range(n_samples):
-        # Generate a single Valine
-        # We use a length 3 sequence ALA-VAL-ALA to avoid terminal effects and ensure geometry
-        # But for speed, let's try single AA or small peptide. 
-        # NeRF needs atoms to build off, so usually index 0 is special.
-        # Let's use a 3-residue chain and look at the middle one.
         pdb_content = synth_pdb.generator.generate_pdb_content(
-            sequence_str="ALA-VAL-ALA",
+            sequence_str=seq,
             conformation=conformation,
             minimize_energy=False # Speed up
         )
         
-        # Parse back (mocking IO or using biotite)
-        # Using biotite directly is better but generate_pdb_content returns a string.
-        # Let's use the internal _resolve_sequence helper? No, we need the 3D structure.
-        # We can parse the string with biotite.
         import biotite.structure.io.pdb as pdb
         import io
         pdb_file = pdb.PDBFile.read(io.StringIO(pdb_content))
         structure = pdb_file.get_structure(model=1)
         
-        # Get Chi1 of Residue 2 (VAL)
-        angle = get_chi1_angle(structure, 2)
+        # Get Chi1 of Residue 2
+        angle = get_chi1_angle(structure, 2, res_name)
         if angle is not None:
             angles.append(angle)
             
@@ -71,77 +87,81 @@ def classify_rotamer(angle):
     else:
         return "t"  # around 180
 
-# @pytest.mark.skipif(True, reason="Feature not implemented yet - test expected to fail")
-def test_rotamer_dependence_on_structure():
+def test_val_rotamer_dependence_on_structure():
     """
-    Verify that the rotamer distribution is different for Alpha Helix vs Beta Sheet.
-    
-    Biophysical Expectation for Valine (Dunbrack 2002):
-    - Alpha Helix: 't' (trans, 180) is strongly disfavored (steric clash with backbone i-3, i-4).
-                   'g-' (-60) is dominant.
-    - Beta Sheet:  't' is much more allowed/favored than in helices.
-                   'g-' is still common.
-    
-    If our implementation is backbone-INDEPENDENT (current state), the distributions will be STATISTICALLY IDENTICAL.
-    If back-DEPENDENT, they should differ.
+    Verify that the rotamer distribution is different for Alpha Helix vs Beta Sheet (Valine).
     """
-    
     # 1. Sample Alpha Helix
-    alpha_angles = sample_rotamer_distribution('alpha', n_samples=30)
+    alpha_angles = sample_rotamer_distribution('alpha', res_name="VAL", n_samples=30)
     alpha_counts = Counter([classify_rotamer(a) for a in alpha_angles])
     
     # 2. Sample Beta Sheet
-    beta_angles = sample_rotamer_distribution('beta', n_samples=30)
+    beta_angles = sample_rotamer_distribution('beta', res_name="VAL", n_samples=30)
     beta_counts = Counter([classify_rotamer(a) for a in beta_angles])
     
-    print(f"\nAlpha Counts: {alpha_counts}")
-    print(f"Beta Counts:  {beta_counts}")
+    print(f"\nVAL Alpha Counts: {alpha_counts}")
+    print(f"VAL Beta Counts:  {beta_counts}")
     
-    # 3. Assert Difference
-    # In the current backbone-independent code, both draw from the SAME prob distribution:
-    # VAL: g- (70%), t (20%), g+ (10%)
-    # So both should look roughly like 21, 6, 3
+    # Fractions of Trans
+    alpha_trans = alpha_counts['t'] / 30.0
+    beta_trans = beta_counts['t'] / 30.0
     
-    # If we implement the feature correctly:
-    # Alpha should have very low 't' count.
-    # Beta might have higher 't' or different 'g-'.
+    # Expectation: Beta loves Trans (0.40), Alpha hates it (0.05)
+    # Generic: Trans is 0.20
+    # Difference should be large
+    assert abs(alpha_trans - beta_trans) > 0.15, \
+        f"VAL: Distributions similar. Alpha={alpha_trans}, Beta={beta_trans}"
+
+def test_leu_rotamer_dependence_on_structure():
+    """
+    Verify LEU rotamer dependence. Expecting failure until implemented.
+    """
+    # 1. Sample Alpha Helix
+    alpha_angles = sample_rotamer_distribution('alpha', res_name="LEU", n_samples=30)
+    alpha_counts = Counter([classify_rotamer(a) for a in alpha_angles])
     
-    # For this failure test, we just check if they are identical (which they shouldn't be in reality, 
-    # but WILL be in the current code).
-    # Wait, random sampling might make them slightly different by chance.
-    # But since the underlying probability is the same, they shouldn't be SYSTEMATICALLY different.
+    # 2. Sample Beta Sheet
+    beta_angles = sample_rotamer_distribution('beta', res_name="LEU", n_samples=30)
+    beta_counts = Counter([classify_rotamer(a) for a in beta_angles])
     
-    # Let's strictly assert:
-    # "The probability of 't' in Alpha should be significantly LOWER than in Beta"
-    # Or simply: The code currently uses the SAME dict for both.
+    print(f"\nLEU Alpha Counts: {alpha_counts}")
+    print(f"LEU Beta Counts:  {beta_counts}")
     
-    # To check if we are using backbone-dependent stats, we can check if the function actually uses the new data.
-    # But functional testing is better.
+    # Generic LEU: g- (0.85 approx?), t (0.10)
+    # Backbone Dependent Plan:
+    # Alpha: g- (0.90+), t (very rare)
+    # Beta: g- (0.60), t (0.30+)
     
-    # Assertion:
-    # This assertion will FAIL currently because the distributions are drawn from the same pool.
-    # We expect this test to fail now, and PASS after we implement the feature.
+    alpha_trans = alpha_counts['t'] / 30.0
+    beta_trans = beta_counts['t'] / 30.0
     
-    # Note: To make it fail reliably now, we need to assert that they are DIFFERENT distributions.
-    # Currently they are essentially the same.
-    # It's hard to prove they are "same" with random sampling without large N.
+    # This assertion should FAIL if both use Generic Library
+    assert abs(alpha_trans - beta_trans) > 0.15, \
+        f"LEU: Distributions similar. Alpha={alpha_trans}, Beta={beta_trans}"
+
+def test_phe_rotamer_dependence_on_structure():
+    """
+    Verify PHE (Aromatic) rotamer dependence. Expecting failure until implemented.
+    """
+    # 1. Sample Alpha Helix
+    alpha_angles = sample_rotamer_distribution('alpha', res_name="PHE", n_samples=30)
+    alpha_counts = Counter([classify_rotamer(a) for a in alpha_angles])
     
-    # Alternative:
-    # We can inspect the logs or use mocks to see if a different library was accessed?
-    # No, stick to functional.
+    # 2. Sample Beta Sheet
+    beta_angles = sample_rotamer_distribution('beta', res_name="PHE", n_samples=30)
+    beta_counts = Counter([classify_rotamer(a) for a in beta_angles])
     
-    # Let's assert that observed Trans fraction in Alpha is distinct from Beta.
-    # Currently: Alpha Trans ~ 20%, Beta Trans ~ 20%. -> Difference ~ 0.
-    # Target: Alpha Trans < 5%, Beta Trans > 30%.
+    print(f"\nPHE Alpha Counts: {alpha_counts}")
+    print(f"PHE Beta Counts:  {beta_counts}")
     
-    alpha_trans_frac = alpha_counts['t'] / 30.0
-    beta_trans_frac = beta_counts['t'] / 30.0
+    # Generic PHE: g- (0.60), t (0.30)
+    # Backbone Dependent Plan:
+    # Alpha: g- (0.90), t (rare) - Aromatics clash heavily with helix
+    # Beta: t is allowed/favored
     
-    print(f"Alpha Trans Fraction: {alpha_trans_frac}")
-    print(f"Beta Trans Fraction: {beta_trans_frac}")
+    alpha_trans = alpha_counts['t'] / 30.0
+    beta_trans = beta_counts['t'] / 30.0
     
-    # This should fail if they are surprisingly similar (which they are now)
-    # or pass if we implemented the logic.
-    assert abs(alpha_trans_frac - beta_trans_frac) > 0.15, \
-        f"Rotamer distributions appear backbone-independent! Trans fractions (Alpha={alpha_trans_frac:.2f}, Beta={beta_trans_frac:.2f}) are too similar."
+    assert abs(alpha_trans - beta_trans) > 0.15, \
+        f"PHE: Distributions similar. Alpha={alpha_trans}, Beta={beta_trans}"
 

@@ -604,5 +604,79 @@ BACKBONE_DEPENDENT_ROTAMER_LIBRARY: Dict[str, Dict[str, List[Dict[str, List[floa
             {'chi1': [-60.0], 'prob': 0.40},
             {'chi1': [180.0], 'prob': 0.30}, # t allowed
         ]
+    },
+    # --- Expanded Library (LEU, LYS, Aromatics) ---
+    # EDUCATIONAL NOTE - Rotamers for Non-Branched Residues:
+    # Leucine (LEU) and Lysine (LYS) have flexible side chains.
+    # However, secondary structure still dictates Chi1 preferences.
+    # In Helices, side chains project outwards and must avoid i-3/i-4 backbone atoms.
+    # 'trans' (180 deg) at Chi1 is generally disfavored in helices compared to sheets.
+    'LEU': {
+        'alpha': [
+            # In alpha-helices, g- (mt) is strongly preferred (~90%)
+            # Reference: Lovell et al., Proteins 2000.
+            {'chi1': [-60.0], 'chi2': [180.0], 'prob': 0.65},  # mt
+            {'chi1': [-60.0], 'chi2': [60.0],  'prob': 0.25},  # mp (trans is gauche to C-gamma)
+            {'chi1': [180.0], 'chi2': [60.0],  'prob': 0.05},  # tp
+            {'chi1': [180.0], 'chi2': [180.0], 'prob': 0.05},  # tt
+        ],
+        'beta': [
+            # In beta-sheets, the backbone is extended, allowing trans rotamers more easily.
+            # tp (trans, plus) becomes a major conformer.
+            {'chi1': [-60.0], 'chi2': [180.0], 'prob': 0.40},  # mt
+            {'chi1': [180.0], 'chi2': [60.0],  'prob': 0.40},  # tp (Distinctive for Beta)
+            {'chi1': [-60.0], 'chi2': [60.0],  'prob': 0.15}, 
+            {'chi1': [180.0], 'chi2': [180.0], 'prob': 0.05}, 
+        ]
+    },
+    'LYS': {
+        'alpha': [
+             # Helices favor g- at Chi1 to avoid backbone clashes.
+             {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [180.0], 'prob': 0.70},
+             {'chi1': [180.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [180.0], 'prob': 0.20},
+             {'chi1': [60.0],  'chi2': [180.0], 'chi3': [180.0], 'chi4': [180.0], 'prob': 0.10},
+        ],
+        'beta': [
+             # Sheets allow extended (all-trans) conformations much more readily.
+             {'chi1': [-60.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [180.0], 'prob': 0.40},
+             {'chi1': [180.0], 'chi2': [180.0], 'chi3': [180.0], 'chi4': [180.0], 'prob': 0.50}, # All-trans favored
+             {'chi1': [60.0],  'chi2': [180.0], 'chi3': [180.0], 'chi4': [180.0], 'prob': 0.10},
+        ]
+    },
+    # EDUCATIONAL NOTE - Aromatic Residues (PHE, TYR, TRP):
+    # These bulky side chains are highly restricted by steric clashes.
+    # In alpha-helices, Chi1=180 (trans) causes the ring to clash with the i-3 residue.
+    # Thus, g- is overwhelmingly dominant in helices.
+    'PHE': {
+        'alpha': [
+            {'chi1': [-60.0], 'chi2': [90.0], 'prob': 0.90},  # g- (Dominant)
+            {'chi1': [180.0], 'chi2': [90.0], 'prob': 0.05},  # t (Rare/Disfavored)
+            {'chi1': [-60.0], 'chi2': [0.0],  'prob': 0.05}
+        ],
+        'beta': [
+            {'chi1': [-60.0], 'chi2': [90.0], 'prob': 0.50},
+            {'chi1': [180.0], 'chi2': [90.0], 'prob': 0.45},  # t (Common in sheets)
+            {'chi1': [-60.0], 'chi2': [0.0],  'prob': 0.05}
+        ]
+    },
+    'TYR': {
+        'alpha': [
+            {'chi1': [-60.0], 'chi2': [90.0], 'prob': 0.90},
+            {'chi1': [180.0], 'chi2': [90.0], 'prob': 0.05},
+        ],
+        'beta': [
+            {'chi1': [-60.0], 'chi2': [90.0], 'prob': 0.50},
+            {'chi1': [180.0], 'chi2': [90.0], 'prob': 0.45},
+        ]
+    },
+    'TRP': {
+        'alpha': [
+            {'chi1': [-60.0], 'chi2': [-90.0], 'prob': 0.90}, # g-
+            {'chi1': [180.0], 'chi2': [-90.0], 'prob': 0.05}, # t
+        ],
+        'beta': [
+            {'chi1': [-60.0], 'chi2': [-90.0], 'prob': 0.50},
+            {'chi1': [180.0], 'chi2': [-90.0], 'prob': 0.45}, # t
+        ]
     }
 }
