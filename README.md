@@ -674,6 +674,15 @@ synth-pdb --sequence "LKELEKELEKELEKELEKELEKELEKELEKELEKELEKELEKELEKELEKE" --con
 ```
 *Educational Concept*: A massive, rigid rod where the helical groove is clearly visible. Excellent for demonstrating persistence length.
 
+**4. "Synthetic Antibody" (The Ultimate Stress Test)**
+*450 Residues*
+Empirical simulation of a full IgG Heavy Chain: 4 Beta-sandwich domains (VH, CH1, CH2, CH3) connected by linkers.
+```bash
+synth-pdb --length 450 --structure "1-100:beta,101-110:random,111-210:beta,211-230:random,231-330:beta,331-340:random,341-440:beta,441-450:random" --minimize --visualize --output synthetic_antibody.pdb
+```
+*Note*: This is a computationally intensive task! Energy minimization for ~7000 atoms may take several minutes.
+*Educational Concept*: Simulating multi-domain packing and the flexibility of the hinge region (residues 211-230).
+
 #### For Structural Biologists
 
 ```bash
